@@ -550,9 +550,9 @@ function renderPreview() {
 
     // Привязываем правый/нижний край к целому числу шагов (нет обрезков)
     const stepY =
-        state.gridType === 'millimeter'                                          ? 10 :
-        state.gridType === 'notes'                                               ? 20 :
-        (state.gridType === 'slanted' || state.gridType === 'frequent')          ? 12 :
+        state.gridType === 'millimeter'                                         ? 10 :
+        state.gridType === 'notes'                                              ? 20 :
+        (state.gridType === 'slanted' || state.gridType === 'frequent')         ? 12 :
         state.gridStep;
     const stepX =
         (state.gridType === 'square' || state.gridType === 'dots' || state.gridType === 'isometric') ? state.gridStep :
@@ -562,9 +562,20 @@ function renderPreview() {
     const x1 = x0 + Math.floor((w - mL - mR) / stepX) * stepX;
     const y1 = y0 + Math.floor((h - mT - mB) / stepY) * stepY;
 
-    refs.previewSvg.querySelectorAll('.grid-layer').forEach(el => el.remove());
+    // ── Object Pooling: переиспользуем существующие <path class="grid-layer"> ──
+    // Школьная красная линия (<line>) обрабатывается отдельно (см. ниже),
+    // поэтому в пул попадают только <path>-узлы.
+    const existingPaths = [
+        ...refs.previewSvg.querySelectorAll('path.grid-layer'),
+    ];
 
-    if (x1 - x0 < 5 || y1 - y0 < 5) return;
+    if (x1 - x0 < 5 || y1 - y0 < 5) {
+        // Нет места для сетки — скрываем всё и выходим
+        existingPaths.forEach(el => el.remove());
+        const ml = refs.previewSvg.querySelector('line.school-margin-line');
+        if (ml) ml.style.display = 'none';
+        return;
+    }
 
     const clipRect = ensureClipPath(refs.previewSvg);
     clipRect.setAttribute('x',      x0);
@@ -572,43 +583,85 @@ function renderPreview() {
     clipRect.setAttribute('width',  x1 - x0);
     clipRect.setAttribute('height', y1 - y0);
 
-    buildGridPaths(state.gridType, x0, y0, x1, y1, state.gridStep)
-        .forEach(({ d, opacity, strokeWidth, dasharray, linecap }) => {
-            if (!d || !d.trim()) return;
+    const pathDefs = buildGridPaths(state.gridType, x0, y0, x1, y1, state.gridStep)
+        .filter(({ d }) => d && d.trim());
 
-            const path = document.createElementNS(SVG_NS, 'path');
-            path.setAttribute('class',        'grid-layer');
-            path.setAttribute('d',            d);
-            path.setAttribute('stroke',       state.lineColor);
-            path.setAttribute('stroke-width', strokeWidth !== undefined ? strokeWidth : state.lineThick);
-            path.setAttribute('fill',         'none');
-            path.setAttribute('clip-path',    `url(#${CLIP_ID})`);
+    // Обновляем существующие узлы или создаём новые
+    pathDefs.forEach(({ d, opacity, strokeWidth, dasharray, linecap }, i) => {
+        let path = existingPaths[i];
 
-            if (opacity  !== undefined) path.setAttribute('opacity',          opacity);
-            if (dasharray)              path.setAttribute('stroke-dasharray', dasharray);
-            if (linecap)                path.setAttribute('stroke-linecap',   linecap);
-
+        if (!path) {
+            // Пул исчерпан — создаём новый узел
+            path = document.createElementNS(SVG_NS, 'path');
+            path.setAttribute('class',     'grid-layer');
+            path.setAttribute('fill',      'none');
+            path.setAttribute('clip-path', `url(#${CLIP_ID})`);
             refs.previewSvg.appendChild(path);
-        });
+        }
 
-    // Школьные поля: вертикальная красная линия
-    // Клетка — ровно 4 шага от снаппованного x1
-    // ruled / slanted / frequent — фиксированный отступ 25 мм от x1
-    if (state.schoolMargins && SCHOOL_MARGIN_TYPES.includes(state.gridType)) {
+        // Обновляем атрибуты (всегда перезаписываем все обязательные)
+        path.setAttribute('d',            d);
+        path.setAttribute('stroke',       state.lineColor);
+        path.setAttribute('stroke-width', strokeWidth !== undefined ? strokeWidth : state.lineThick);
+
+        // Опциональные атрибуты: устанавливаем если есть, сбрасываем если нет
+        if (opacity !== undefined) {
+            path.setAttribute('opacity', opacity);
+        } else {
+            path.removeAttribute('opacity');
+        }
+
+        if (dasharray) {
+            path.setAttribute('stroke-dasharray', dasharray);
+        } else {
+            path.removeAttribute('stroke-dasharray');
+        }
+
+        if (linecap) {
+            path.setAttribute('stroke-linecap', linecap);
+        } else {
+            path.removeAttribute('stroke-linecap');
+        }
+    });
+
+    // Удаляем лишние узлы из пула (если новый тип сетки требует меньше путей)
+    for (let i = pathDefs.length; i < existingPaths.length; i++) {
+        existingPaths[i].remove();
+    }
+
+    // ── Школьные поля: вертикальная красная линия ──
+    // Переиспользуем единственный <line class="school-margin-line">,
+    // обновляя координаты; скрываем через display:none если не нужна.
+    const needMarginLine = state.schoolMargins && SCHOOL_MARGIN_TYPES.includes(state.gridType);
+    let ml = refs.previewSvg.querySelector('line.school-margin-line');
+
+    if (needMarginLine) {
+        // Клетка — ровно 4 шага от снаппованного x1
+        // ruled / slanted / frequent — фиксированный отступ 25 мм от x1
         const redOffset = state.gridType === 'square' ? 4 * state.gridStep : 25;
         const lineX = r(x1 - redOffset);
+
         if (lineX > x0) {
-            const ml = document.createElementNS(SVG_NS, 'line');
-            ml.setAttribute('class',        'grid-layer school-margin-line');
+            if (!ml) {
+                // Создаём один раз
+                ml = document.createElementNS(SVG_NS, 'line');
+                ml.setAttribute('class',     'school-margin-line');
+                ml.setAttribute('stroke',    '#B71234');
+                ml.setAttribute('clip-path', `url(#${CLIP_ID})`);
+                refs.previewSvg.appendChild(ml);
+            }
+            // Обновляем координаты и толщину
             ml.setAttribute('x1',           lineX);
             ml.setAttribute('y1',           y0);
             ml.setAttribute('x2',           lineX);
             ml.setAttribute('y2',           y1);
-            ml.setAttribute('stroke',       '#B71234');
             ml.setAttribute('stroke-width', state.lineThick);
-            ml.setAttribute('clip-path',    `url(#${CLIP_ID})`);
-            refs.previewSvg.appendChild(ml);
+            ml.style.display = '';
+        } else if (ml) {
+            ml.style.display = 'none';
         }
+    } else if (ml) {
+        ml.style.display = 'none';
     }
 }
 
