@@ -179,6 +179,7 @@ function initGridType() {
 
         const isFixed = FIXED_STEP_TYPES.includes(value);
         refs.stepSection.classList.toggle('is-disabled', isFixed);
+        refs.gridStepNum.disabled = isFixed;
 
         if (isFixed) {
             refs.stepBadge.textContent =
@@ -585,6 +586,21 @@ function renderPreview() {
    ЭКСПОРТ: PDF
    ═══════════════════════════════════════════════════════════════════════ */
 
+const PAPER_NAMES = {
+    '210x297': 'A4',
+    '297x420': 'A3',
+    '148x210': 'A5',
+};
+
+function getPaperName() {
+    const key = `${state.paperW}x${state.paperH}`;
+    return PAPER_NAMES[key] ?? `${state.paperW}x${state.paperH}`;
+}
+
+function buildFilename(ext) {
+    return `tochilka-${getPaperName()}-${state.gridType}.${ext}`;
+}
+
 async function exportPDF() {
     const { w, h } = getSheetDimensions();
     const { jsPDF } = window.jspdf;
@@ -601,7 +617,7 @@ async function exportPDF() {
         : window.svg2pdf && window.svg2pdf.svg2pdf;
 
     await svg2pdfFn(refs.previewSvg, doc, { x: 0, y: 0, width: w, height: h });
-    doc.save('ruling-tochilka.pdf');
+    doc.save(buildFilename('pdf'));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -639,7 +655,7 @@ function exportPNG() {
             URL.revokeObjectURL(url);
 
             const link    = document.createElement('a');
-            link.download = 'ruling-tochilka.png';
+            link.download = buildFilename('png');
             link.href     = canvas.toDataURL('image/png');
             link.click();
 
