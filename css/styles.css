@@ -153,6 +153,32 @@ body {
 
 .color-badge-text { font-family: 'Cascadia Code', 'Consolas', monospace; }
 
+/* HEX-инпут — выглядит как текст, но редактируемый */
+.hex-input {
+    width: 65px !important;
+    padding: 2px 4px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.72rem !important;
+    font-weight: 700;
+    color: var(--brand-teal) !important;
+    text-align: left !important;
+    text-transform: lowercase;
+    cursor: text;
+}
+
+.hex-input:hover {
+    box-shadow: var(--shadow-sm-inset) !important;
+}
+
+.hex-input:focus-visible {
+    outline: 2px solid var(--brand-teal);
+    outline-offset: 2px;
+    box-shadow: none !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    СЕГМЕНТИРОВАННЫЕ ПЕРЕКЛЮЧАТЕЛИ (заменяют <select>)
    ═══════════════════════════════════════════════════════════════════════ */
@@ -414,6 +440,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+    padding: 6px;
 }
 
 .color-swatch {
@@ -547,24 +574,24 @@ body {
     text-align: center;
 }
 
-/* Кнопка "0" — маленький круг в заголовке "ПОЛЯ (ММ)" */
+/* Кнопка "Без полей" — прямоугольная мини-кнопка в заголовке "ПОЛЯ (ММ)" */
 .btn-reset-margins {
     flex: none;
-    width: 24px;
-    height: 24px;
     flex-shrink: 0;
     border: none;
-    border-radius: 50%;
+    border-radius: 8px;
+    padding: 4px 10px;
     background: var(--bg-color);
     color: var(--text-muted);
     font-family: var(--font-family);
     font-size: 0.75rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: var(--shadow-sm-inset);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap;
     transition:
         box-shadow var(--ease-std),
         color var(--ease-std),
@@ -572,13 +599,14 @@ body {
 }
 
 .btn-reset-margins:hover {
-    color: var(--brand-red);
-    box-shadow: var(--shadow-sm-inset), 0 0 0 2px var(--brand-red);
+    color: var(--text-main);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
 .btn-reset-margins:active {
-    box-shadow: var(--shadow-md-inset);
-    transform: scale(0.93);
+    box-shadow: var(--shadow-sm-inset);
+    transform: translateY(0);
 }
 
 .btn-reset-margins:focus-visible {
@@ -589,7 +617,7 @@ body {
 /* Активное (тумблер вкл.) состояние — вдавленный неоморфизм + teal-акцент */
 .btn-reset-margins.active {
     color: var(--brand-teal);
-    box-shadow: var(--shadow-sm-inset), 0 0 0 2px var(--brand-teal);
+    box-shadow: var(--shadow-sm-inset);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════

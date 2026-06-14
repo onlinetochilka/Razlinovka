@@ -49,7 +49,7 @@ const refs = {
     paperSizeGroup: null, orientationGroup: null, gridTypeGroup: null,
     gridStepNum: null, stepBadge: null, stepSection: null,
     lineThickNum: null,
-    colorRow: null, customColor: null, colorBadge: null,
+    colorRow: null, customColor: null, colorHexInput: null,
     marginTop: null, marginBottom: null, marginLeft: null, marginRight: null,
     btnResetMargins: null,
     btnDownload: null, btnPrint: null,
@@ -68,7 +68,7 @@ function cacheRefs() {
     refs.lineThickNum     = document.getElementById('lineThickNum');
     refs.colorRow         = document.querySelector('[data-action="line-color"]');
     refs.customColor      = document.getElementById('customColor');
-    refs.colorBadge       = document.getElementById('colorBadge');
+    refs.colorHexInput    = document.getElementById('colorHexInput');
     refs.marginTop        = document.getElementById('marginTop');
     refs.marginBottom     = document.getElementById('marginBottom');
     refs.marginLeft       = document.getElementById('marginLeft');
@@ -249,7 +249,7 @@ function initRangeCombos() {
 
 function applyColor(hex, activeEl) {
     state.lineColor = hex;
-    refs.colorBadge.textContent = hex;
+    refs.colorHexInput.value = hex;
 
     refs.colorRow.querySelectorAll('.color-swatch').forEach(s => {
         s.classList.remove('active');
@@ -286,6 +286,23 @@ function initColorPicker() {
     refs.customColor.addEventListener('change', e => {
         applyColor(e.target.value, pickerWrap);
     });
+
+    // Ручной ввод HEX
+    const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+    function applyHexInput() {
+        const raw = refs.colorHexInput.value.trim();
+        const hex = raw.startsWith('#') ? raw : '#' + raw;
+        if (!HEX_RE.test(hex)) {
+            triggerInputError(refs.colorHexInput);
+            refs.colorHexInput.value = state.lineColor;
+            return;
+        }
+        refs.customColor.value = hex;
+        pickerWrap.style.background = hex;
+        applyColor(hex, pickerWrap);
+    }
+    refs.colorHexInput.addEventListener('change', applyHexInput);
+    refs.colorHexInput.addEventListener('blur',   applyHexInput);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -529,8 +546,21 @@ function renderPreview() {
     refs.bgRect.setAttribute('width',  w);
     refs.bgRect.setAttribute('height', h);
 
-    const x0 = mL,     y0 = mT;
-    const x1 = w - mR, y1 = h - mB;
+    const x0 = mL, y0 = mT;
+
+    // Привязываем правый/нижний край к целому числу шагов (нет обрезков)
+    const stepY =
+        state.gridType === 'millimeter'                                          ? 10 :
+        state.gridType === 'notes'                                               ? 20 :
+        (state.gridType === 'slanted' || state.gridType === 'frequent')          ? 12 :
+        state.gridStep;
+    const stepX =
+        (state.gridType === 'square' || state.gridType === 'dots' || state.gridType === 'isometric') ? state.gridStep :
+        state.gridType === 'millimeter'                                                               ? 10 :
+        1;
+
+    const x1 = x0 + Math.floor((w - mL - mR) / stepX) * stepX;
+    const y1 = y0 + Math.floor((h - mT - mB) / stepY) * stepY;
 
     refs.previewSvg.querySelectorAll('.grid-layer').forEach(el => el.remove());
 
@@ -562,8 +592,8 @@ function renderPreview() {
         });
 
     // Школьные поля: вертикальная красная линия
-    // Клетка — совпадает с вертикальной линией сетки (4 клетки от правого края)
-    // Остальные типы — фиксированный отступ 25 мм
+    // Клетка — ровно 4 шага от снаппованного x1
+    // ruled / slanted / frequent — фиксированный отступ 25 мм от x1
     if (state.schoolMargins && SCHOOL_MARGIN_TYPES.includes(state.gridType)) {
         const redOffset = state.gridType === 'square' ? 4 * state.gridStep : 25;
         const lineX = r(x1 - redOffset);
