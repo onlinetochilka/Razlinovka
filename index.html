@@ -17,6 +17,9 @@
     <noscript><div><img src="https://mc.yandex.ru/watch/XXXXXXXX" style="position:absolute;left:-9999px" alt=""></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
+
     <link rel="stylesheet" href="https://raw.githubusercontent.com/onlinetochilka/theme/main/tochilka-theme.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -44,7 +47,7 @@
             <!-- Формат бумаги -->
             <section class="setting-section">
                 <div class="setting-label">Формат бумаги</div>
-                <nav class="seg-group seg-group--4"
+                <nav class="seg-group seg-group--3"
                      role="group"
                      aria-label="Формат бумаги"
                      id="paperSizeGroup"
@@ -58,9 +61,6 @@
                     <button class="seg-btn"
                             data-value="A3" data-w="297" data-h="420"
                             aria-pressed="false">A3</button>
-                    <button class="seg-btn"
-                            data-value="Letter" data-w="215.9" data-h="279.4"
-                            aria-pressed="false">Letter</button>
                 </nav>
             </section>
 
@@ -93,18 +93,27 @@
 
             <!-- Тип сетки -->
             <section class="setting-section">
-                <div class="setting-label">Тип сетки</div>
+                <div class="setting-label">
+                    Тип сетки
+                    <label class="school-margin-toggle" id="schoolToggleWrap" title="Школьные поля">
+                        <span class="toggle-label-text">Поля</span>
+                        <span class="toggle-switch">
+                            <input type="checkbox" id="schoolToggle" checked aria-label="Школьные поля">
+                            <span class="toggle-track"></span>
+                        </span>
+                    </label>
+                </div>
                 <nav class="seg-group seg-group--grid"
                      role="group"
                      aria-label="Тип разлиновки"
                      id="gridTypeGroup"
                      data-action="grid-type">
                     <button class="seg-btn active" data-value="square"     aria-pressed="true">Клетка</button>
-                    <button class="seg-btn"         data-value="millimeter" aria-pressed="false">Мм-бумага</button>
-                    <button class="seg-btn"         data-value="wide"       aria-pressed="false">Широкая</button>
-                    <button class="seg-btn"         data-value="narrow"     aria-pressed="false">Узкая</button>
+                    <button class="seg-btn"         data-value="ruled"      aria-pressed="false">Линейка</button>
                     <button class="seg-btn"         data-value="slanted"    aria-pressed="false">Косая</button>
                     <button class="seg-btn"         data-value="frequent"   aria-pressed="false">Частая косая</button>
+                    <button class="seg-btn"         data-value="millimeter" aria-pressed="false">Мм-бумага</button>
+                    <button class="seg-btn"         data-value="notes"      aria-pressed="false">Ноты</button>
                     <button class="seg-btn"         data-value="isometric"  aria-pressed="false">Изометрия</button>
                     <button class="seg-btn"         data-value="dots"       aria-pressed="false">Точки</button>
                 </nav>
@@ -114,19 +123,19 @@
             <section class="setting-section" id="stepSection">
                 <div class="setting-label">
                     Шаг сетки
-                    <span class="val-badge" id="stepBadge">8 мм</span>
+                    <span class="val-badge" id="stepBadge">5 мм</span>
                 </div>
                 <div class="range-combo">
                     <input type="range"
                            class="range-track"
                            id="gridStep"
-                           min="2" max="20" step="0.5" value="8"
+                           min="2" max="20" step="0.5" value="5"
                            aria-label="Шаг сетки в мм"
                            data-action="grid-step-range">
                     <input type="number"
                            class="sub-input"
                            id="gridStepNum"
-                           min="2" max="20" step="0.5" value="8"
+                           min="2" max="20" step="0.5" value="5"
                            aria-label="Шаг сетки числом"
                            data-action="grid-step-number">
                     <span class="unit-label" aria-hidden="true">мм</span>
@@ -272,17 +281,43 @@
 
         <!-- ── Кнопки действий ──────────────────────────────────────────── -->
         <footer class="action-footer">
-            <button class="btn btn-secondary"
-                    id="btnSave"
-                    data-action="save-template"
-                    aria-label="Сохранить текущий шаблон">
-                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                    <polyline points="17 21 17 13 7 13 7 21"/>
-                    <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                Сохранить шаблон
-            </button>
+
+            <!-- Скачать (с выпадающим меню) -->
+            <div class="download-wrapper">
+                <button class="btn btn-secondary"
+                        id="btnDownload"
+                        aria-label="Скачать файл"
+                        aria-haspopup="true"
+                        aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Скачать
+                </button>
+                <div class="download-menu" id="downloadMenu" role="menu" hidden>
+                    <button class="download-option" id="btnPDF" role="menuitem">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        PDF (для печати)
+                    </button>
+                    <button class="download-option" id="btnPNG" role="menuitem">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        PNG (без фона)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Распечатать -->
             <button class="btn btn-primary"
                     id="btnPrint"
                     data-action="print-sheet"
@@ -292,8 +327,9 @@
                     <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
                     <rect x="6" y="14" width="12" height="8"/>
                 </svg>
-                Распечатать лист
+                Распечатать
             </button>
+
         </footer>
 
     </aside><!-- /.settings-card -->
@@ -307,7 +343,6 @@
              role="img"
              aria-label="Предпросмотр листа формата A4">
             <rect id="bgRect" x="0" y="0" width="210" height="297" fill="#ffffff"/>
-            <!-- Сетка будет отрисована здесь в следующем этапе -->
         </svg>
     </main>
 

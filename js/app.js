@@ -1,6 +1,5 @@
 /**
  * Генератор разлиновки — app.js
- * Этап 2: SVG-сетка через <path d="...">, логика цвета/полей/толщины
  */
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -28,14 +27,15 @@ function getStoredUtm() {
    ═══════════════════════════════════════════════════════════════════════ */
 
 const state = {
-    paperW:      210,
-    paperH:      297,
-    orientation: 'portrait',
-    gridType:    'square',
-    gridStep:    8,
-    lineThick:   0.3,
-    lineColor:   '#94a3b8',
-    margins:     { top: 15, bottom: 15, left: 20, right: 10 },
+    paperW:        210,
+    paperH:        297,
+    orientation:   'portrait',
+    gridType:      'square',
+    gridStep:      5,
+    lineThick:     0.3,
+    lineColor:     '#94a3b8',
+    margins:       { top: 15, bottom: 15, left: 20, right: 10 },
+    schoolMargins: true,
 };
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -48,7 +48,9 @@ const refs = {
     lineThick: null, lineThickNum: null, thickBadge: null,
     colorRow: null, customColor: null, colorBadge: null,
     marginTop: null, marginBottom: null, marginLeft: null, marginRight: null,
-    btnSave: null, btnPrint: null,
+    btnDownload: null, btnPrint: null,
+    downloadMenu: null, btnPDF: null, btnPNG: null,
+    schoolToggle: null, schoolToggleWrap: null,
     previewSvg: null, bgRect: null,
 };
 
@@ -70,8 +72,13 @@ function cacheRefs() {
     refs.marginBottom     = document.getElementById('marginBottom');
     refs.marginLeft       = document.getElementById('marginLeft');
     refs.marginRight      = document.getElementById('marginRight');
-    refs.btnSave          = document.getElementById('btnSave');
+    refs.btnDownload      = document.getElementById('btnDownload');
     refs.btnPrint         = document.getElementById('btnPrint');
+    refs.downloadMenu     = document.getElementById('downloadMenu');
+    refs.btnPDF           = document.getElementById('btnPDF');
+    refs.btnPNG           = document.getElementById('btnPNG');
+    refs.schoolToggle     = document.getElementById('schoolToggle');
+    refs.schoolToggleWrap = document.getElementById('schoolToggleWrap');
     refs.previewSvg       = document.getElementById('previewSvg');
     refs.bgRect           = document.getElementById('bgRect');
 }
@@ -82,14 +89,14 @@ function cacheRefs() {
 
 function triggerInputError(input) {
     input.classList.remove('error');
-    void input.offsetWidth;         // перезапуск анимации
+    void input.offsetWidth;
     input.classList.add('error');
     setTimeout(() => input.classList.remove('error'), 700);
 }
 
 function clamp(val, mn, mx) { return Math.min(mx, Math.max(mn, val)); }
 
-/** Форматирует число без лишних нулей: 8 → "8", 0.3 → "0.3", 0.05 → "0.05" */
+/** Форматирует число без лишних нулей: 8 → "8", 0.3 → "0.3" */
 function fmtNum(n) { return String(parseFloat(n.toFixed(4))); }
 
 /** Округляет координату SVG до 3 знаков (избегает float-мусора в path d) */
@@ -154,30 +161,47 @@ function initOrientation() {
     });
 }
 
+/* ─── Типы, для которых тумблер "Поля" активен ───────────────────────── */
+const SCHOOL_MARGIN_TYPES = ['square', 'ruled', 'slanted', 'frequent'];
+
+/* ─── Типы с фиксированным шагом ────────────────────────────────────── */
+const FIXED_STEP_TYPES = ['millimeter', 'slanted', 'frequent', 'notes'];
+
+/* ─── Шаги по умолчанию при переключении типа ────────────────────────── */
+const STEP_DEFAULTS = { square: 5, ruled: 8, dots: 5, isometric: 6 };
+
 /* ─── Тип сетки ──────────────────────────────────────────────────────── */
 function initGridType() {
-    // Типы с фиксированным шагом (слайдер отключается)
-    const FIXED = ['millimeter', 'slanted', 'frequent'];
-    // Шаг по умолчанию при переключении на тип
-    const STEP_DEFAULTS = { square: 8, wide: 8, narrow: 5, dots: 5, isometric: 6 };
-
     initSegGroup(refs.gridTypeGroup, value => {
         state.gridType = value;
 
-        const isFixed = FIXED.includes(value);
+        const isFixed = FIXED_STEP_TYPES.includes(value);
         refs.stepSection.classList.toggle('is-disabled', isFixed);
 
         if (isFixed) {
             refs.stepBadge.textContent =
-                value === 'millimeter' ? '1 / 5 / 10 мм' : '4 / 8 мм';
+                value === 'millimeter' ? '1/5/10 мм' :
+                value === 'notes'      ? '2/12 мм'   : '4/8 мм';
         } else {
             const def = STEP_DEFAULTS[value] ?? state.gridStep;
             updateRangeCombo(refs.gridStep, refs.gridStepNum, refs.stepBadge, def, 2, 20, 'мм');
             state.gridStep = def;
         }
 
+        // Видимость тумблера "Поля"
+        refs.schoolToggleWrap.classList.toggle('is-hidden', !SCHOOL_MARGIN_TYPES.includes(value));
+
         scheduleRedraw();
         track('grid_type_changed', { value });
+    });
+}
+
+/* ─── Тумблер "Школьные поля" ────────────────────────────────────────── */
+function initSchoolMargins() {
+    refs.schoolToggle.addEventListener('change', () => {
+        state.schoolMargins = refs.schoolToggle.checked;
+        scheduleRedraw();
+        track('school_margins_toggled', { on: state.schoolMargins });
     });
 }
 
@@ -247,23 +271,21 @@ function applyColor(hex, activeEl) {
     state.lineColor = hex;
     refs.colorBadge.textContent = hex;
 
-    // Снять active со всех образцов
     refs.colorRow.querySelectorAll('.color-swatch').forEach(s => {
         s.classList.remove('active');
         s.setAttribute('aria-pressed', 'false');
     });
 
-    // Снять active с кастомной кнопки и сбросить её фон
     const pickerWrap = refs.customColor.parentElement;
     pickerWrap.classList.remove('active');
 
     if (activeEl && activeEl.classList.contains('color-swatch')) {
         activeEl.classList.add('active');
         activeEl.setAttribute('aria-pressed', 'true');
-        pickerWrap.style.background = '';   // вернуть CSS-переменную
+        pickerWrap.style.background = '';
     } else if (activeEl === pickerWrap) {
         pickerWrap.classList.add('active');
-        pickerWrap.style.background = hex; // показать выбранный цвет
+        pickerWrap.style.background = hex;
     }
 
     scheduleRedraw();
@@ -290,7 +312,7 @@ function initColorPicker() {
    ПОЛЯ — с динамическими лимитами (защита от дурака)
    ═══════════════════════════════════════════════════════════════════════ */
 
-const MIN_GRID_AREA = 20; // мм — минимальная рабочая зона
+const MIN_GRID_AREA = 20;
 
 function getMarginMax(key) {
     const { w, h } = getSheetDimensions();
@@ -350,7 +372,6 @@ function getSheetDimensions() {
    Всё в миллиметрах. Один <path d="..."> на слой, без тысяч тегов.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/** Горизонтальные линии с равным шагом внутри прямоугольника */
 function hLines(x0, y0, x1, y1, step) {
     let d = '';
     const n = Math.floor((y1 - y0) / step);
@@ -361,7 +382,6 @@ function hLines(x0, y0, x1, y1, step) {
     return d;
 }
 
-/** Вертикальные линии с равным шагом внутри прямоугольника */
 function vLines(x0, y0, x1, y1, step) {
     let d = '';
     const n = Math.floor((x1 - x0) / step);
@@ -377,7 +397,7 @@ function buildSquareGrid(x0, y0, x1, y1, step) {
     return [{ d: hLines(x0, y0, x1, y1, step) + vLines(x0, y0, x1, y1, step) }];
 }
 
-/* ─── Миллиметровка (ГОСТ): 3 path наложенных друг на друга ─────────── */
+/* ─── Миллиметровка (ГОСТ): 3 path с разной прозрачностью ───────────── */
 function buildMillimeterGrid(x0, y0, x1, y1) {
     const grid = s => hLines(x0, y0, x1, y1, s) + vLines(x0, y0, x1, y1, s);
     return [
@@ -387,15 +407,15 @@ function buildMillimeterGrid(x0, y0, x1, y1) {
     ];
 }
 
-/* ─── Широкая / Узкая линейка — только горизонтальные ───────────────── */
+/* ─── Линейка — только горизонтальные ───────────────────────────────── */
 function buildRuledLines(x0, y0, x1, y1, step) {
     return [{ d: hLines(x0, y0, x1, y1, step) }];
 }
 
-/* ─── Точечная сетка: dasharray-трюк (0 DOM-элементов лишних) ──────── */
+/* ─── Точечная сетка: dasharray-трюк ────────────────────────────────── */
 function buildDotGrid(x0, y0, x1, y1, step) {
     return [{
-        d:        hLines(x0, y0, x1, y1, step),
+        d:         hLines(x0, y0, x1, y1, step),
         dasharray: `0 ${step}`,
         linecap:   'round',
     }];
@@ -403,23 +423,20 @@ function buildDotGrid(x0, y0, x1, y1, step) {
 
 /* ─── Изометрия (равносторонние треугольники) ────────────────────────── */
 function buildIsometricGrid(x0, y0, x1, y1, step) {
-    const tan60  = Math.tan(Math.PI / 3); // √3 ≈ 1.732
-    const sin60  = Math.sin(Math.PI / 3); // √3/2 ≈ 0.866
-    const vStep  = step * sin60;           // вертикальный шаг горизонтальных линий
-    const h      = y1 - y0;
-    const w      = x1 - x0;
-    const dxH    = h / tan60;             // горизонтальное смещение на полную высоту
+    const tan60 = Math.tan(Math.PI / 3);
+    const sin60 = Math.sin(Math.PI / 3);
+    const vStep = step * sin60;
+    const h     = y1 - y0;
+    const w     = x1 - x0;
+    const dxH   = h / tan60;
 
     let d = hLines(x0, y0, x1, y1, vStep);
 
-    // Линии 60° (сверху-слева → снизу-справа в экранных координатах)
     const nLeft = Math.ceil(dxH / step) + 1;
     for (let i = -nLeft; i <= Math.ceil(w / step) + 1; i++) {
         const tx = x0 + i * step;
         d += `M ${r(tx)} ${r(y0)} L ${r(tx + dxH)} ${r(y1)} `;
     }
-
-    // Линии 120° (сверху-справа → снизу-слева)
     for (let i = 0; i <= Math.ceil((w + dxH) / step) + 1; i++) {
         const tx = x0 + i * step;
         d += `M ${r(tx)} ${r(y0)} L ${r(tx - dxH)} ${r(y1)} `;
@@ -428,23 +445,49 @@ function buildIsometricGrid(x0, y0, x1, y1, step) {
     return [{ d }];
 }
 
-/* ─── Школьная косая / Частая косая ─────────────────────────────────── */
-//  Угол 65° от горизонтали. offsetX = height / tan(65°)
-//  Горизонтальный шаг диагоналей: diagPitch мм.
+/* ─── Нотный стан: группы по 5 линий с шагом 2 мм, между станами 12 мм */
+function buildNotesGrid(x0, y0, x1, y1) {
+    const LINE_STEP = 2;              // мм между линиями стана
+    const STAFF_H   = 4 * LINE_STEP;  // 8 мм — высота стана (4 промежутка)
+    const BETWEEN   = 12;             // мм между станами
+    const CYCLE     = STAFF_H + BETWEEN; // 20 мм
+
+    let d = '';
+    for (let staffTop = y0; staffTop < y1; staffTop += CYCLE) {
+        for (let i = 0; i < 5; i++) {
+            const y = r(staffTop + i * LINE_STEP);
+            if (y > y1 + 0.001) break;
+            d += `M ${r(x0)} ${y} H ${r(x1)} `;
+        }
+    }
+    return [{ d }];
+}
+
+/* ─── Косая / Частая косая (ГОСТ) ────────────────────────────────────── */
+// Горизонтальные рабочие строки: пары линий с шагом 4 мм, пропуск 8 мм
+// Косые линии под углом 65° от горизонтали
+// diagPitch: шаг диагоналей (25 мм для Косой, 5 мм для Частой)
 function buildSlantedGrid(x0, y0, x1, y1, diagPitch) {
     const ANGLE    = 65 * Math.PI / 180;
-    const tanA     = Math.tan(ANGLE);    // ≈ 2.145
-    const ROW_H    = 4;                  // мм: высота рабочей строки
-    const h = y1 - y0;
-    const w = x1 - x0;
+    const tanA     = Math.tan(ANGLE);   // ≈ 2.145
+    const ROW_STEP = 4;                 // мм: шаг внутри пары
+    const GAP      = 8;                 // мм: пропуск между парами
+    const CYCLE    = ROW_STEP + GAP;    // 12 мм
+    const h        = y1 - y0;
 
-    // Горизонтальные линии каждые 4 мм (рабочая строка + разделитель)
-    let d = hLines(x0, y0, x1, y1, ROW_H);
+    let d = '';
 
-    // Диагонали: линия идёт от (bx, y1) к (bx + offsetX, y0) — снизу-слева вверх-вправо
-    const offsetX  = h / tanA;
-    const startBx  = x0 - (Math.ceil(offsetX / diagPitch) + 1) * diagPitch;
-    const endBx    = x1 + diagPitch;
+    // Парные горизонтальные линии (ГОСТ)
+    for (let pairY = y0; pairY < y1; pairY += CYCLE) {
+        d += `M ${r(x0)} ${r(pairY)} H ${r(x1)} `;
+        const y2 = r(pairY + ROW_STEP);
+        if (y2 <= y1) d += `M ${r(x0)} ${y2} H ${r(x1)} `;
+    }
+
+    // Диагонали: от (bx, y1) к (bx + offsetX, y0) — снизу-слева вверх-вправо
+    const offsetX = h / tanA;
+    const startBx = x0 - (Math.ceil(offsetX / diagPitch) + 1) * diagPitch;
+    const endBx   = x1 + diagPitch;
 
     for (let bx = startBx; bx <= endBx; bx += diagPitch) {
         d += `M ${r(bx)} ${r(y1)} L ${r(bx + offsetX)} ${r(y0)} `;
@@ -458,10 +501,10 @@ function buildGridPaths(type, x0, y0, x1, y1, step) {
     switch (type) {
         case 'square':     return buildSquareGrid(x0, y0, x1, y1, step);
         case 'millimeter': return buildMillimeterGrid(x0, y0, x1, y1);
-        case 'wide':       return buildRuledLines(x0, y0, x1, y1, step);
-        case 'narrow':     return buildRuledLines(x0, y0, x1, y1, step);
+        case 'ruled':      return buildRuledLines(x0, y0, x1, y1, step);
         case 'dots':       return buildDotGrid(x0, y0, x1, y1, step);
         case 'isometric':  return buildIsometricGrid(x0, y0, x1, y1, step);
+        case 'notes':      return buildNotesGrid(x0, y0, x1, y1);
         case 'slanted':    return buildSlantedGrid(x0, y0, x1, y1, 25);
         case 'frequent':   return buildSlantedGrid(x0, y0, x1, y1, 5);
         default:           return buildSquareGrid(x0, y0, x1, y1, step);
@@ -495,31 +538,25 @@ function renderPreview() {
     const { w, h } = getSheetDimensions();
     const { top: mT, bottom: mB, left: mL, right: mR } = state.margins;
 
-    // Обновить viewBox и фоновый прямоугольник
     refs.previewSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     refs.previewSvg.setAttribute('aria-label',
         `Предпросмотр: ${state.orientation === 'landscape' ? 'альбомный' : 'книжный'}, ${state.gridType}`);
     refs.bgRect.setAttribute('width',  w);
     refs.bgRect.setAttribute('height', h);
 
-    // Координаты рабочей области
-    const x0 = mL,       y0 = mT;
-    const x1 = w - mR,   y1 = h - mB;
+    const x0 = mL,     y0 = mT;
+    const x1 = w - mR, y1 = h - mB;
 
-    // Удалить старые слои сетки
     refs.previewSvg.querySelectorAll('.grid-layer').forEach(el => el.remove());
 
-    // Защита: рабочая область слишком мала
     if (x1 - x0 < 5 || y1 - y0 < 5) return;
 
-    // Обновить clipPath
     const clipRect = ensureClipPath(refs.previewSvg);
     clipRect.setAttribute('x',      x0);
     clipRect.setAttribute('y',      y0);
     clipRect.setAttribute('width',  x1 - x0);
     clipRect.setAttribute('height', y1 - y0);
 
-    // Генерировать пути и вставить в SVG
     buildGridPaths(state.gridType, x0, y0, x1, y1, state.gridStep)
         .forEach(({ d, opacity, strokeWidth, dasharray, linecap }) => {
             if (!d || !d.trim()) return;
@@ -532,12 +569,98 @@ function renderPreview() {
             path.setAttribute('fill',         'none');
             path.setAttribute('clip-path',    `url(#${CLIP_ID})`);
 
-            if (opacity  !== undefined) path.setAttribute('opacity',           opacity);
-            if (dasharray)              path.setAttribute('stroke-dasharray',  dasharray);
-            if (linecap)                path.setAttribute('stroke-linecap',    linecap);
+            if (opacity  !== undefined) path.setAttribute('opacity',          opacity);
+            if (dasharray)              path.setAttribute('stroke-dasharray', dasharray);
+            if (linecap)                path.setAttribute('stroke-linecap',   linecap);
 
             refs.previewSvg.appendChild(path);
         });
+
+    // Школьные поля: вертикальная красная линия, 20 мм от правого края рабочей области
+    if (state.schoolMargins && SCHOOL_MARGIN_TYPES.includes(state.gridType)) {
+        const lineX = r(x1 - 20);
+        if (lineX > x0) {
+            const ml = document.createElementNS(SVG_NS, 'line');
+            ml.setAttribute('class',        'grid-layer school-margin-line');
+            ml.setAttribute('x1',           lineX);
+            ml.setAttribute('y1',           y0);
+            ml.setAttribute('x2',           lineX);
+            ml.setAttribute('y2',           y1);
+            ml.setAttribute('stroke',       '#B71234');
+            ml.setAttribute('stroke-width', state.lineThick);
+            ml.setAttribute('clip-path',    `url(#${CLIP_ID})`);
+            refs.previewSvg.appendChild(ml);
+        }
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ЭКСПОРТ: PDF
+   ═══════════════════════════════════════════════════════════════════════ */
+
+async function exportPDF() {
+    const { w, h } = getSheetDimensions();
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF({
+        orientation: w > h ? 'l' : 'p',
+        unit:        'mm',
+        format:      [w, h],
+    });
+
+    // svg2pdf может экспортироваться как window.svg2pdf или window.svg2pdf.svg2pdf
+    const svg2pdfFn = (window.svg2pdf && typeof window.svg2pdf === 'function')
+        ? window.svg2pdf
+        : window.svg2pdf && window.svg2pdf.svg2pdf;
+
+    await svg2pdfFn(refs.previewSvg, doc, { x: 0, y: 0, width: w, height: h });
+    doc.save('ruling-tochilka.pdf');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ЭКСПОРТ: PNG (прозрачный фон, scale × 3)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function exportPNG() {
+    return new Promise(resolve => {
+        const { w, h } = getSheetDimensions();
+        const SCALE     = 3;
+        const PX_PER_MM = 3.7795275591; // 96 dpi
+
+        const pxW = Math.round(w * PX_PER_MM * SCALE);
+        const pxH = Math.round(h * PX_PER_MM * SCALE);
+
+        // Клонируем SVG и задаём пиксельные размеры; убираем белый фон
+        const svgClone = refs.previewSvg.cloneNode(true);
+        svgClone.setAttribute('width',  pxW);
+        svgClone.setAttribute('height', pxH);
+        const bgClone = svgClone.querySelector('#bgRect');
+        if (bgClone) bgClone.setAttribute('fill', 'none');
+
+        const svgData = new XMLSerializer().serializeToString(svgClone);
+        const blob    = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url     = URL.createObjectURL(blob);
+
+        const canvas  = document.createElement('canvas');
+        canvas.width  = pxW;
+        canvas.height = pxH;
+
+        const img = new Image();
+        img.onload = () => {
+            // Намеренно не вызываем fillRect — фон остаётся прозрачным
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+
+            const link    = document.createElement('a');
+            link.download = 'ruling-tochilka.png';
+            link.href     = canvas.toDataURL('image/png');
+            link.click();
+
+            resolve();
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+        img.src = url;
+    });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -545,18 +668,60 @@ function renderPreview() {
    ═══════════════════════════════════════════════════════════════════════ */
 
 function initActionButtons() {
+    // Печать — прямой вызов window.print()
     refs.btnPrint.addEventListener('click', () => {
         track('print_sheet_clicked', { ...getSheetDimensions(), gridType: state.gridType });
-        setTimeout(() => window.print(), 50);
+        window.print();
     });
 
-    refs.btnSave.addEventListener('click', () => {
-        track('save_template_clicked', { ...getSheetDimensions(), gridType: state.gridType });
-        refs.btnSave.classList.add('is-success');
-        setTimeout(() => refs.btnSave.classList.remove('is-success'), 1500);
+    // Скачать — открыть/закрыть выпадающее меню
+    refs.btnDownload.addEventListener('click', e => {
+        e.stopPropagation();
+        const isOpen = !refs.downloadMenu.hidden;
+        refs.downloadMenu.hidden = isOpen;
+        refs.btnDownload.setAttribute('aria-expanded', String(!isOpen));
     });
 
-    [refs.btnSave, refs.btnPrint].forEach(btn => {
+    // Закрыть меню при клике вне него
+    document.addEventListener('click', () => {
+        if (!refs.downloadMenu.hidden) {
+            refs.downloadMenu.hidden = true;
+            refs.btnDownload.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    // Пункт меню: PDF
+    refs.btnPDF.addEventListener('click', async e => {
+        e.stopPropagation();
+        refs.downloadMenu.hidden = true;
+        refs.btnDownload.setAttribute('aria-expanded', 'false');
+        refs.btnDownload.classList.add('is-loading');
+        track('download_pdf', { ...getSheetDimensions(), gridType: state.gridType });
+        try {
+            await exportPDF();
+        } catch (err) {
+            console.error('[PDF export]', err);
+        } finally {
+            refs.btnDownload.classList.remove('is-loading');
+        }
+    });
+
+    // Пункт меню: PNG
+    refs.btnPNG.addEventListener('click', async e => {
+        e.stopPropagation();
+        refs.downloadMenu.hidden = true;
+        refs.btnDownload.setAttribute('aria-expanded', 'false');
+        refs.btnDownload.classList.add('is-loading');
+        track('download_png', { ...getSheetDimensions(), gridType: state.gridType });
+        try {
+            await exportPNG();
+        } finally {
+            refs.btnDownload.classList.remove('is-loading');
+        }
+    });
+
+    // Визуальный feedback нажатия
+    [refs.btnDownload, refs.btnPrint].forEach(btn => {
         btn.addEventListener('pointerdown', () => btn.classList.add('active-press'));
         btn.addEventListener('pointerup',   () => btn.classList.remove('active-press'));
         btn.addEventListener('pointerout',  () => btn.classList.remove('active-press'));
@@ -591,6 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initRangeCombos();
     initColorPicker();
     initMarginInputs();
+    initSchoolMargins();
     initActionButtons();
 
     renderPreview();
