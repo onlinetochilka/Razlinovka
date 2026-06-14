@@ -194,6 +194,7 @@ function initGridType() {
         // Видимость тумблера "Поля"
         refs.schoolToggleWrap.classList.toggle('is-hidden', !SCHOOL_MARGIN_TYPES.includes(value));
 
+        reachGoal('ruling_type_changed', { type: value });
         scheduleRedraw();
         track('grid_type_changed', { value });
     });
@@ -693,6 +694,7 @@ function initResetMarginsBtn() {
 function initActionButtons() {
     // Печать — прямой вызов window.print()
     refs.btnPrint.addEventListener('click', () => {
+        reachGoal('ruling_print');
         track('print_sheet_clicked', { ...getSheetDimensions(), gridType: state.gridType });
         window.print();
     });
@@ -711,6 +713,7 @@ function initActionButtons() {
     refs.btnPDF.addEventListener('click', async () => {
         refs.downloadMenu.hidePopover();
         refs.btnDownload.classList.add('is-loading');
+        reachGoal('ruling_download_pdf');
         track('download_pdf', { ...getSheetDimensions(), gridType: state.gridType });
         try {
             await exportPDF();
@@ -725,6 +728,7 @@ function initActionButtons() {
     refs.btnPNG.addEventListener('click', async () => {
         refs.downloadMenu.hidePopover();
         refs.btnDownload.classList.add('is-loading');
+        reachGoal('ruling_download_png');
         track('download_png', { ...getSheetDimensions(), gridType: state.gridType });
         try {
             await exportPNG();
@@ -745,11 +749,15 @@ function initActionButtons() {
    АНАЛИТИКА
    ═══════════════════════════════════════════════════════════════════════ */
 
+function reachGoal(goalName, params = {}) {
+    if (typeof ym === 'function') {
+        try { ym(109837787, 'reachGoal', goalName, params); } catch (_) {}
+    }
+}
+
 function track(action, params = {}) {
     const payload = { action, ...params, ...getStoredUtm(), ts: Date.now() };
-    if (typeof ym === 'function') {
-        try { ym('XXXXXXXX', 'reachGoal', action, payload); } catch (_) {}
-    }
+    reachGoal(action, payload);
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         console.log('[track]', action, payload);
     }
