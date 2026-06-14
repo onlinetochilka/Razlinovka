@@ -119,49 +119,33 @@
                 </nav>
             </section>
 
-            <!-- Шаг сетки -->
+            <!-- Шаг сетки + Толщина линий (одна строка) -->
             <section class="setting-section" id="stepSection">
-                <div class="setting-label">
-                    Шаг сетки
-                    <span class="val-badge" id="stepBadge">5 мм</span>
-                </div>
-                <div class="range-combo">
-                    <input type="range"
-                           class="range-track"
-                           id="gridStep"
-                           min="2" max="20" step="0.5" value="5"
-                           aria-label="Шаг сетки в мм"
-                           data-action="grid-step-range">
-                    <input type="number"
-                           class="sub-input"
-                           id="gridStepNum"
-                           min="2" max="20" step="0.5" value="5"
-                           aria-label="Шаг сетки числом"
-                           data-action="grid-step-number">
-                    <span class="unit-label" aria-hidden="true">мм</span>
-                </div>
-            </section>
-
-            <!-- Толщина линий -->
-            <section class="setting-section">
-                <div class="setting-label">
-                    Толщина линий
-                    <span class="val-badge" id="thickBadge">0.3 мм</span>
-                </div>
-                <div class="range-combo">
-                    <input type="range"
-                           class="range-track"
-                           id="lineThick"
-                           min="0.1" max="1.0" step="0.05" value="0.3"
-                           aria-label="Толщина линий в миллиметрах"
-                           data-action="line-thick-range">
-                    <input type="number"
-                           class="sub-input"
-                           id="lineThickNum"
-                           min="0.1" max="1.0" step="0.05" value="0.3"
-                           aria-label="Толщина линий числом"
-                           data-action="line-thick-number">
-                    <span class="unit-label" aria-hidden="true">мм</span>
+                <div class="step-thick-row">
+                    <div class="step-thick-item">
+                        <span class="step-thick-label">Шаг <span class="val-badge" id="stepBadge"></span></span>
+                        <div class="step-thick-input-wrap">
+                            <input type="number"
+                                   class="sub-input"
+                                   id="gridStepNum"
+                                   min="2" max="20" step="0.5" value="5"
+                                   aria-label="Шаг сетки в мм"
+                                   data-action="grid-step-number">
+                            <span class="unit-label" aria-hidden="true">мм</span>
+                        </div>
+                    </div>
+                    <div class="step-thick-item">
+                        <span class="step-thick-label">Толщина</span>
+                        <div class="step-thick-input-wrap">
+                            <input type="number"
+                                   class="sub-input"
+                                   id="lineThickNum"
+                                   min="0.1" max="1.0" step="0.05" value="0.3"
+                                   aria-label="Толщина линий в мм"
+                                   data-action="line-thick-number">
+                            <span class="unit-label" aria-hidden="true">мм</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -244,15 +228,10 @@
                                    aria-label="Левое поле в мм"
                                    data-action="margin-left">
                         </div>
-                        <div class="compass-center" aria-hidden="true">
-                            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="8" y="8" width="24" height="24" rx="3"
-                                      stroke="currentColor" stroke-width="1.5"
-                                      stroke-dasharray="3 3" opacity="0.4"/>
-                                <rect x="14" y="14" width="12" height="12" rx="1"
-                                      fill="currentColor" opacity="0.12"/>
-                            </svg>
-                        </div>
+                        <button class="compass-center btn-reset-margins"
+                                id="btnResetMargins"
+                                title="Обнулить поля"
+                                aria-label="Обнулить все поля">0</button>
                         <div class="margin-cell">
                             <label class="margin-label" for="marginRight">Правое</label>
                             <input type="number"
@@ -287,8 +266,7 @@
                 <button class="btn btn-secondary"
                         id="btnDownload"
                         aria-label="Скачать файл"
-                        aria-haspopup="true"
-                        aria-expanded="false">
+                        popovertarget="downloadMenu">
                     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/>
@@ -296,7 +274,7 @@
                     </svg>
                     Скачать
                 </button>
-                <div class="download-menu" id="downloadMenu" role="menu" hidden>
+                <div class="download-menu" id="downloadMenu" role="menu" popover>
                     <button class="download-option" id="btnPDF" role="menuitem">
                         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

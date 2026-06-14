@@ -44,10 +44,11 @@ const state = {
 
 const refs = {
     paperSizeGroup: null, orientationGroup: null, gridTypeGroup: null,
-    gridStep: null, gridStepNum: null, stepBadge: null, stepSection: null,
-    lineThick: null, lineThickNum: null, thickBadge: null,
+    gridStepNum: null, stepBadge: null, stepSection: null,
+    lineThickNum: null,
     colorRow: null, customColor: null, colorBadge: null,
     marginTop: null, marginBottom: null, marginLeft: null, marginRight: null,
+    btnResetMargins: null,
     btnDownload: null, btnPrint: null,
     downloadMenu: null, btnPDF: null, btnPNG: null,
     schoolToggle: null, schoolToggleWrap: null,
@@ -58,13 +59,10 @@ function cacheRefs() {
     refs.paperSizeGroup   = document.getElementById('paperSizeGroup');
     refs.orientationGroup = document.getElementById('orientationGroup');
     refs.gridTypeGroup    = document.getElementById('gridTypeGroup');
-    refs.gridStep         = document.getElementById('gridStep');
     refs.gridStepNum      = document.getElementById('gridStepNum');
     refs.stepBadge        = document.getElementById('stepBadge');
     refs.stepSection      = document.getElementById('stepSection');
-    refs.lineThick        = document.getElementById('lineThick');
     refs.lineThickNum     = document.getElementById('lineThickNum');
-    refs.thickBadge       = document.getElementById('thickBadge');
     refs.colorRow         = document.querySelector('[data-action="line-color"]');
     refs.customColor      = document.getElementById('customColor');
     refs.colorBadge       = document.getElementById('colorBadge');
@@ -72,6 +70,7 @@ function cacheRefs() {
     refs.marginBottom     = document.getElementById('marginBottom');
     refs.marginLeft       = document.getElementById('marginLeft');
     refs.marginRight      = document.getElementById('marginRight');
+    refs.btnResetMargins  = document.getElementById('btnResetMargins');
     refs.btnDownload      = document.getElementById('btnDownload');
     refs.btnPrint         = document.getElementById('btnPrint');
     refs.downloadMenu     = document.getElementById('downloadMenu');
@@ -180,11 +179,12 @@ function initGridType() {
 
         if (isFixed) {
             refs.stepBadge.textContent =
-                value === 'millimeter' ? '1/5/10 мм' :
-                value === 'notes'      ? '2/12 мм'   : '4/8 мм';
+                value === 'millimeter' ? '1/5/10' :
+                value === 'notes'      ? '2/12'   : '4/8';
         } else {
             const def = STEP_DEFAULTS[value] ?? state.gridStep;
-            updateRangeCombo(refs.gridStep, refs.gridStepNum, refs.stepBadge, def, 2, 20, 'мм');
+            refs.gridStepNum.value = fmtNum(def);
+            refs.stepBadge.textContent = '';
             state.gridStep = def;
         }
 
@@ -206,27 +206,15 @@ function initSchoolMargins() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   RANGE + NUMBER COMBO
+   ЧИСЛОВЫЕ ИНПУТЫ (ползунки удалены)
    ═══════════════════════════════════════════════════════════════════════ */
 
-function initRangeCombo({ range, number, badge, unit, min, max, step, stateKey }) {
-    const fmt = v => `${fmtNum(v)} ${unit}`;
-
-    range.addEventListener('input', () => {
-        const val = parseFloat(range.value);
-        number.value = fmtNum(val);
-        badge.textContent = fmt(val);
-        state[stateKey] = val;
-        scheduleRedraw();
-    });
-
+function initNumberInput({ number, min, max, step, stateKey }) {
     number.addEventListener('input', () => {
         const raw = parseFloat(number.value);
         if (isNaN(raw)) return;
         if (raw < min || raw > max) { triggerInputError(number); return; }
         const snapped = Math.round(raw / step) * step;
-        range.value = snapped;
-        badge.textContent = fmt(snapped);
         state[stateKey] = snapped;
         scheduleRedraw();
     });
@@ -239,28 +227,15 @@ function initRangeCombo({ range, number, badge, unit, min, max, step, stateKey }
             raw = clamp(raw, min, max);
         }
         const snapped = Math.round(raw / step) * step;
-        updateRangeCombo(range, number, badge, snapped, min, max, unit);
+        number.value = fmtNum(snapped);
         state[stateKey] = snapped;
         scheduleRedraw();
     });
 }
 
-function updateRangeCombo(range, number, badge, val, min, max, unit) {
-    const v = clamp(val, min, max);
-    range.value  = v;
-    number.value = fmtNum(v);
-    badge.textContent = `${fmtNum(v)} ${unit}`;
-}
-
 function initRangeCombos() {
-    initRangeCombo({
-        range: refs.gridStep, number: refs.gridStepNum, badge: refs.stepBadge,
-        unit: 'мм', min: 2, max: 20, step: 0.5, stateKey: 'gridStep',
-    });
-    initRangeCombo({
-        range: refs.lineThick, number: refs.lineThickNum, badge: refs.thickBadge,
-        unit: 'мм', min: 0.1, max: 1.0, step: 0.05, stateKey: 'lineThick',
-    });
+    initNumberInput({ number: refs.gridStepNum,  min: 2,   max: 20,  step: 0.5,  stateKey: 'gridStep'  });
+    initNumberInput({ number: refs.lineThickNum, min: 0.1, max: 1.0, step: 0.05, stateKey: 'lineThick' });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -576,9 +551,12 @@ function renderPreview() {
             refs.previewSvg.appendChild(path);
         });
 
-    // Школьные поля: вертикальная красная линия, 20 мм от правого края рабочей области
+    // Школьные поля: вертикальная красная линия
+    // Клетка — совпадает с вертикальной линией сетки (4 клетки от правого края)
+    // Остальные типы — фиксированный отступ 25 мм
     if (state.schoolMargins && SCHOOL_MARGIN_TYPES.includes(state.gridType)) {
-        const lineX = r(x1 - 20);
+        const redOffset = state.gridType === 'square' ? 4 * state.gridStep : 25;
+        const lineX = r(x1 - redOffset);
         if (lineX > x0) {
             const ml = document.createElementNS(SVG_NS, 'line');
             ml.setAttribute('class',        'grid-layer school-margin-line');
@@ -664,6 +642,21 @@ function exportPNG() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   КНОПКА «ОБНУЛИТЬ ПОЛЯ» (центр компаса)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function initResetMarginsBtn() {
+    if (!refs.btnResetMargins) return;
+    refs.btnResetMargins.addEventListener('click', () => {
+        [refs.marginTop, refs.marginBottom, refs.marginLeft, refs.marginRight]
+            .forEach(el => { el.value = 0; });
+        state.margins = { top: 0, bottom: 0, left: 0, right: 0 };
+        scheduleRedraw();
+        track('margins_reset');
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    КНОПКИ ДЕЙСТВИЙ
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -674,27 +667,19 @@ function initActionButtons() {
         window.print();
     });
 
-    // Скачать — открыть/закрыть выпадающее меню
-    refs.btnDownload.addEventListener('click', e => {
-        e.stopPropagation();
-        const isOpen = !refs.downloadMenu.hidden;
-        refs.downloadMenu.hidden = isOpen;
-        refs.btnDownload.setAttribute('aria-expanded', String(!isOpen));
-    });
-
-    // Закрыть меню при клике вне него
-    document.addEventListener('click', () => {
-        if (!refs.downloadMenu.hidden) {
-            refs.downloadMenu.hidden = true;
-            refs.btnDownload.setAttribute('aria-expanded', 'false');
+    // Позиционируем popover-меню перед открытием (top-layer → fixed позиция)
+    refs.downloadMenu.addEventListener('beforetoggle', e => {
+        if (e.newState === 'open') {
+            const rect = refs.btnDownload.getBoundingClientRect();
+            refs.downloadMenu.style.left   = rect.left + 'px';
+            refs.downloadMenu.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            refs.downloadMenu.style.width  = rect.width + 'px';
         }
     });
 
     // Пункт меню: PDF
-    refs.btnPDF.addEventListener('click', async e => {
-        e.stopPropagation();
-        refs.downloadMenu.hidden = true;
-        refs.btnDownload.setAttribute('aria-expanded', 'false');
+    refs.btnPDF.addEventListener('click', async () => {
+        refs.downloadMenu.hidePopover();
         refs.btnDownload.classList.add('is-loading');
         track('download_pdf', { ...getSheetDimensions(), gridType: state.gridType });
         try {
@@ -707,10 +692,8 @@ function initActionButtons() {
     });
 
     // Пункт меню: PNG
-    refs.btnPNG.addEventListener('click', async e => {
-        e.stopPropagation();
-        refs.downloadMenu.hidden = true;
-        refs.btnDownload.setAttribute('aria-expanded', 'false');
+    refs.btnPNG.addEventListener('click', async () => {
+        refs.downloadMenu.hidePopover();
         refs.btnDownload.classList.add('is-loading');
         track('download_png', { ...getSheetDimensions(), gridType: state.gridType });
         try {
@@ -756,6 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initRangeCombos();
     initColorPicker();
     initMarginInputs();
+    initResetMarginsBtn();
     initSchoolMargins();
     initActionButtons();
 
