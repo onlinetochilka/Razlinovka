@@ -26,6 +26,8 @@ function getStoredUtm() {
    СОСТОЯНИЕ
    ═══════════════════════════════════════════════════════════════════════ */
 
+const PX_PER_MM = 3.7795275591; // 96 dpi
+
 const state = {
     paperW:        210,
     paperH:        297,
@@ -707,14 +709,24 @@ async function exportPDF() {
    ЭКСПОРТ: PNG (прозрачный фон, scale × 3)
    ═══════════════════════════════════════════════════════════════════════ */
 
-function exportPNG() {
+function exportPNG(attemptScale = 3) {
     return new Promise(resolve => {
         const { w, h } = getSheetDimensions();
-        const SCALE     = 3;
-        const PX_PER_MM = 3.7795275591; // 96 dpi
+        
+        let SCALE = attemptScale;
+        const basePxW = w * PX_PER_MM;
+        const basePxH = h * PX_PER_MM;
+        const MAX_AREA = 16000000;
+        
+        // Автоматически снижаем начальный SCALE, если площадь слишком велика
+        if (attemptScale === 3) {
+             while (SCALE > 1 && (basePxW * SCALE) * (basePxH * SCALE) > MAX_AREA) {
+                 SCALE -= 0.5;
+             }
+        }
 
-        const pxW = Math.round(w * PX_PER_MM * SCALE);
-        const pxH = Math.round(h * PX_PER_MM * SCALE);
+        const pxW = Math.round(basePxW * SCALE);
+        const pxH = Math.round(basePxH * SCALE);
 
         // Клонируем SVG и задаём пиксельные размеры; убираем белый фон
         const svgClone = refs.previewSvg.cloneNode(true);
@@ -727,22 +739,41 @@ function exportPNG() {
         const blob    = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const url     = URL.createObjectURL(blob);
 
-        const canvas  = document.createElement('canvas');
-        canvas.width  = pxW;
-        canvas.height = pxH;
-
         const img = new Image();
         img.onload = () => {
-            // Намеренно не вызываем fillRect — фон остаётся прозрачным
-            canvas.getContext('2d').drawImage(img, 0, 0);
-            URL.revokeObjectURL(url);
+            try {
+                const canvas  = document.createElement('canvas');
+                canvas.width  = pxW;
+                canvas.height = pxH;
+                // Намеренно не вызываем fillRect — фон остаётся прозрачным
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Проверка на случай, если toDataURL вернул пустую строку (ошибка памяти)
+                if (dataUrl === 'data:,') {
+                    throw new Error('Canvas toDataURL returned empty data');
+                }
+                
+                URL.revokeObjectURL(url);
 
-            const link    = document.createElement('a');
-            link.download = buildFilename('png');
-            link.href     = canvas.toDataURL('image/png');
-            link.click();
+                const link    = document.createElement('a');
+                link.download = buildFilename('png');
+                link.href     = dataUrl;
+                link.click();
 
-            resolve();
+                resolve();
+            } catch (err) {
+                URL.revokeObjectURL(url);
+                // Если произошла ошибка (краш по памяти), пробуем уменьшить масштаб
+                if (SCALE > 1) {
+                    console.warn(`exportPNG failed at scale ${SCALE}, retrying with ${SCALE - 0.5}`);
+                    exportPNG(SCALE - 0.5).then(resolve);
+                } else {
+                    console.error('exportPNG completely failed:', err);
+                    resolve();
+                }
+            }
         };
         img.onerror = () => { URL.revokeObjectURL(url); resolve(); };
         img.src = url;
