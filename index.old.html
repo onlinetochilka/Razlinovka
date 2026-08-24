@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Точилка | Генератор разлиновки</title>
+
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+        (window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
+        ym(109837787,"init",{clickmap:true,trackLinks:true,accurateTrackBounce:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/109837787" style="position:absolute;left:-9999px" alt=""></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
+
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/onlinetochilka/theme/main/tochilka-theme.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="tochilka-theme">
+
+    <!-- ── Панель настроек (левая сторона) ─────────────────────────────── -->
+    <aside class="settings-card app-card card" role="complementary" aria-label="Панель настроек разлиновки">
+
+        <header class="header">
+            <img
+                src="https://raw.githubusercontent.com/onlinetochilka/theme/main/tochilka-logo.svg"
+                class="header-logo"
+                alt="Логотип Точилки"
+                width="44" height="44"
+            >
+            <div class="header-text">
+                <div class="header-title">Разлиновка</div>
+                <div class="header-slogan">Идеальные рабочие листы</div>
+            </div>
+        </header>
+
+        <!-- ── Прокручиваемая зона настроек ─────────────────────────────── -->
+        <div class="settings-scroll">
+
+            <!-- Формат бумаги -->
+            <section class="setting-section">
+                <div class="setting-label">Формат бумаги</div>
+                <nav class="seg-group seg-group--3"
+                     role="group"
+                     aria-label="Формат бумаги"
+                     id="paperSizeGroup"
+                     data-action="paper-size">
+                    <button class="seg-btn active"
+                            data-value="A4" data-w="210" data-h="297"
+                            aria-pressed="true">A4</button>
+                    <button class="seg-btn"
+                            data-value="A5" data-w="148.5" data-h="210"
+                            aria-pressed="false">A5</button>
+                    <button class="seg-btn"
+                            data-value="A3" data-w="297" data-h="420"
+                            aria-pressed="false">A3</button>
+                </nav>
+            </section>
+
+            <!-- Ориентация -->
+            <section class="setting-section">
+                <div class="setting-label">Ориентация</div>
+                <nav class="seg-group seg-group--2"
+                     role="group"
+                     aria-label="Ориентация листа"
+                     id="orientationGroup"
+                     data-action="orientation">
+                    <button class="seg-btn seg-btn--icon active"
+                            data-value="portrait"
+                            aria-pressed="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="2" width="14" height="20" rx="2"/>
+                        </svg>
+                        Книжная
+                    </button>
+                    <button class="seg-btn seg-btn--icon"
+                            data-value="landscape"
+                            aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="5" width="20" height="14" rx="2"/>
+                        </svg>
+                        Альбомная
+                    </button>
+                </nav>
+            </section>
+
+            <!-- Тип сетки -->
+            <section class="setting-section">
+                <div class="setting-label">
+                    Тип сетки
+                    <label class="school-margin-toggle" id="schoolToggleWrap" title="Школьные поля">
+                        <span class="toggle-label-text">Поля</span>
+                        <span class="toggle-switch">
+                            <input type="checkbox" id="schoolToggle" checked aria-label="Школьные поля">
+                            <span class="toggle-track"></span>
+                        </span>
+                    </label>
+                </div>
+                <nav class="seg-group seg-group--grid"
+                     role="group"
+                     aria-label="Тип разлиновки"
+                     id="gridTypeGroup"
+                     data-action="grid-type">
+                    <button class="seg-btn active" data-value="square"     aria-pressed="true">Клетка</button>
+                    <button class="seg-btn"         data-value="ruled"      aria-pressed="false">Линейка</button>
+                    <button class="seg-btn"         data-value="slanted"    aria-pressed="false">Косая</button>
+                    <button class="seg-btn"         data-value="frequent"   aria-pressed="false">Частая косая</button>
+                    <button class="seg-btn"         data-value="millimeter" aria-pressed="false">Мм-бумага</button>
+                    <button class="seg-btn"         data-value="notes"      aria-pressed="false">Ноты</button>
+                    <button class="seg-btn"         data-value="isometric"  aria-pressed="false">Изометрия</button>
+                    <button class="seg-btn"         data-value="dots"       aria-pressed="false">Точки</button>
+                </nav>
+            </section>
+
+            <!-- Шаг сетки + Толщина линий (одна строка) -->
+            <section class="setting-section" id="stepSection">
+                <div class="step-thick-row">
+                    <div class="step-thick-item">
+                        <span class="step-thick-label">Шаг <span class="val-badge" id="stepBadge"></span></span>
+                        <div class="step-thick-input-wrap">
+                            <input type="number"
+                                   class="sub-input"
+                                   id="gridStepNum"
+                                   min="2" max="20" step="0.5" value="5"
+                                   aria-label="Шаг сетки в мм"
+                                   data-action="grid-step-number">
+                            <span class="unit-label" aria-hidden="true">мм</span>
+                        </div>
+                    </div>
+                    <div class="step-thick-item">
+                        <span class="step-thick-label">Толщина</span>
+                        <div class="step-thick-input-wrap">
+                            <input type="number"
+                                   class="sub-input"
+                                   id="lineThickNum"
+                                   min="0.1" max="1.0" step="0.05" value="0.3"
+                                   aria-label="Толщина линий в мм"
+                                   data-action="line-thick-number">
+                            <span class="unit-label" aria-hidden="true">мм</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Цвет линий -->
+            <section class="setting-section">
+                <div class="setting-label">
+                    Цвет линий
+                    <input type="text" id="colorHexInput" class="sub-input hex-input" maxlength="7" value="#94a3b8" aria-label="HEX-код цвета линий" spellcheck="false">
+                </div>
+                <div class="color-row" role="group" aria-label="Цвет линий" data-action="line-color">
+                    <button class="color-swatch"
+                            data-color="#000000"
+                            style="--swatch-bg: #000000"
+                            aria-label="Чёрный"
+                            title="Чёрный"
+                            aria-pressed="false"></button>
+                    <button class="color-swatch active"
+                            data-color="#94a3b8"
+                            style="--swatch-bg: #94a3b8"
+                            aria-label="Серый"
+                            title="Серый"
+                            aria-pressed="true"></button>
+                    <button class="color-swatch"
+                            data-color="#006584"
+                            style="--swatch-bg: #006584"
+                            aria-label="Синий"
+                            title="Синий"
+                            aria-pressed="false"></button>
+                    <button class="color-swatch"
+                            data-color="#B71234"
+                            style="--swatch-bg: #B71234"
+                            aria-label="Красный"
+                            title="Красный"
+                            aria-pressed="false"></button>
+                    <button class="color-swatch"
+                            data-color="#10b981"
+                            style="--swatch-bg: #10b981"
+                            aria-label="Зелёный"
+                            title="Зелёный"
+                            aria-pressed="false"></button>
+                    <label class="color-picker-wrap" title="Выбрать свой цвет" aria-label="Выбрать свой цвет">
+                        <input type="color"
+                               id="customColor"
+                               value="#94a3b8"
+                               aria-label="Пользовательский цвет"
+                               data-action="custom-color">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>
+                            <circle cx="6.5"  cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+                            <circle cx="9.5"  cy="7.5"  r="1.5" fill="currentColor" stroke="none"/>
+                            <circle cx="14.5" cy="7.5"  r="1.5" fill="currentColor" stroke="none"/>
+                            <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+                        </svg>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Поля (мм) -->
+            <section class="setting-section">
+                <div class="setting-label">
+                    Поля (мм)
+                    <button class="btn-reset-margins"
+                            id="btnResetMargins"
+                            title="Обнулить / восстановить поля"
+                            aria-label="Обнулить все поля">Без полей</button>
+                </div>
+                <div class="margins-grid">
+                    <div class="margin-row">
+                        <label class="margin-label" for="marginTop">Верхнее</label>
+                        <input type="number"
+                               class="sub-input margin-input"
+                               id="marginTop"
+                               value="15" min="0" max="100"
+                               aria-label="Верхнее поле в мм"
+                               data-action="margin-top">
+                    </div>
+                    <div class="margin-row">
+                        <label class="margin-label" for="marginRight">Правое</label>
+                        <input type="number"
+                               class="sub-input margin-input"
+                               id="marginRight"
+                               value="10" min="0" max="100"
+                               aria-label="Правое поле в мм"
+                               data-action="margin-right">
+                    </div>
+                    <div class="margin-row">
+                        <label class="margin-label" for="marginBottom">Нижнее</label>
+                        <input type="number"
+                               class="sub-input margin-input"
+                               id="marginBottom"
+                               value="15" min="0" max="100"
+                               aria-label="Нижнее поле в мм"
+                               data-action="margin-bottom">
+                    </div>
+                    <div class="margin-row">
+                        <label class="margin-label" for="marginLeft">Левое</label>
+                        <input type="number"
+                               class="sub-input margin-input"
+                               id="marginLeft"
+                               value="20" min="0" max="100"
+                               aria-label="Левое поле в мм"
+                               data-action="margin-left">
+                    </div>
+                </div>
+            </section>
+
+        </div><!-- /.settings-scroll -->
+
+        <!-- ── Кнопки действий ──────────────────────────────────────────── -->
+        <footer class="action-footer">
+
+            <!-- Скачать (с выпадающим меню) -->
+            <div class="download-wrapper">
+                <button class="btn btn-secondary"
+                        id="btnDownload"
+                        aria-label="Скачать файл"
+                        popovertarget="downloadMenu">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Скачать
+                </button>
+                <div class="download-menu" id="downloadMenu" role="menu" popover>
+                    <button class="download-option" id="btnPDF" role="menuitem">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        PDF (для печати)
+                    </button>
+                    <button class="download-option" id="btnPNG" role="menuitem">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        PNG (без фона)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Распечатать -->
+            <button class="btn btn-primary"
+                    id="btnPrint"
+                    data-action="print-sheet"
+                    aria-label="Распечатать лист">
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                Распечатать
+            </button>
+
+        </footer>
+
+    </aside><!-- /.settings-card -->
+
+    <!-- ── Превью листа (правая сторона) ───────────────────────────────── -->
+    <main class="preview-wrap" role="main" aria-label="Предпросмотр разлиновки">
+        <svg id="previewSvg"
+             viewBox="0 0 210 297"
+             preserveAspectRatio="xMidYMid meet"
+             xmlns="http://www.w3.org/2000/svg"
+             role="img"
+             aria-label="Предпросмотр листа формата A4">
+            <rect id="bgRect" x="0" y="0" width="210" height="297" fill="#ffffff"/>
+        </svg>
+    </main>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
