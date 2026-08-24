@@ -11,7 +11,7 @@ export const GRID_TYPES = [
   { id: 'ruled',      label: 'Линейка' },
   { id: 'slanted',    label: 'Косая' },
   { id: 'frequent',   label: 'Частая косая' },
-  { id: 'millimeter', label: 'Мм-бумага' },
+  { id: 'millimeter', label: 'Миллиметровка' },
   { id: 'notes',      label: 'Ноты' },
   { id: 'isometric',  label: 'Изометрия' },
   { id: 'dots',       label: 'Точки' },
