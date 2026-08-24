@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useRulingStore } from '../../store/useRulingStore';
 import { COLOR_PRESETS } from '../../utils/constants';
+import { track } from '../../utils/analytics';
 
 function isValidHex(hex) {
   return /^#[0-9A-Fa-f]{6}$/.test(hex);
@@ -16,6 +17,16 @@ export default function ColorPicker() {
   const handleHexChange = (e) => {
     const v = e.target.value.trim();
     setLineColor(v);
+  };
+
+  const handlePresetClick = (hex) => {
+    setLineColor(hex);
+    track('color_changed', { color: hex, source: 'preset' });
+  };
+
+  const handleNativeChange = (e) => {
+    setLineColor(e.target.value);
+    track('color_changed', { color: e.target.value, source: 'custom' });
   };
 
   return (
@@ -36,7 +47,7 @@ export default function ColorPicker() {
           <button
             key={hex}
             title={label}
-            onClick={() => setLineColor(hex)}
+            onClick={() => handlePresetClick(hex)}
             style={{ background: hex }}
             className={`w-7 h-7 rounded-full transition-all ${
               lineColor.toLowerCase() === hex.toLowerCase()
@@ -65,7 +76,7 @@ export default function ColorPicker() {
             ref={nativeRef}
             type="color"
             value={isValidHex(lineColor) ? lineColor : '#94a3b8'}
-            onChange={e => setLineColor(e.target.value)}
+            onChange={handleNativeChange}
             className="absolute opacity-0 w-full h-full inset-0 cursor-pointer"
           />
         </button>

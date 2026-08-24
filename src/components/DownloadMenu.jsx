@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { FileText, Image } from 'lucide-react';
 import { exportPDF, exportPNG } from '../utils/export';
 import { useRulingStore } from '../store/useRulingStore';
+import { track, reachGoal } from '../utils/analytics';
+
 
 export default function DownloadMenu({ svgRef }) {
   const [open, setOpen]       = useState(false);
@@ -23,6 +25,8 @@ export default function DownloadMenu({ svgRef }) {
     if (!svgRef.current) return;
     setLoading('pdf');
     setOpen(false);
+    track('download_pdf', { paperSize: state.paperSize, orientation: state.orientation, gridType: state.gridType });
+    reachGoal('ruling_download_pdf');
     try {
       await exportPDF(svgRef.current, state);
     } finally {
@@ -34,6 +38,8 @@ export default function DownloadMenu({ svgRef }) {
     if (!svgRef.current) return;
     setLoading('png');
     setOpen(false);
+    track('download_png', { paperSize: state.paperSize, orientation: state.orientation, gridType: state.gridType });
+    reachGoal('ruling_download_png');
     try {
       await exportPNG(svgRef.current, state);
     } finally {
@@ -41,12 +47,13 @@ export default function DownloadMenu({ svgRef }) {
     }
   };
 
+
   return (
     <div className="relative flex-1" ref={menuRef}>
       <button
         onClick={() => setOpen(v => !v)}
         disabled={!!loading}
-        className="w-full h-12 rounded-xl border border-stone-200 bg-white text-stone-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-stone-50 transition-all active:scale-[0.98] disabled:opacity-50"
+        className="w-full h-12 rounded-xl border border-stone-200 bg-white text-stone-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-stone-50 transition-all active:scale-[0.98] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none"
       >
         {loading ? (
           <svg className="w-4 h-4 animate-spin text-brand-blue" viewBox="0 0 24 24" fill="none">
@@ -66,7 +73,7 @@ export default function DownloadMenu({ svgRef }) {
         <div className="absolute bottom-full mb-1.5 left-0 right-0 bg-white rounded-xl shadow-lg ring-1 ring-slate-200 overflow-hidden z-50">
           <button
             onClick={handlePDF}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-700 hover:bg-stone-50 transition-colors focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none"
           >
             <FileText className="w-4 h-4 text-brand-blue" />
             PDF (для печати)
@@ -74,7 +81,7 @@ export default function DownloadMenu({ svgRef }) {
           <div className="mx-3 h-px bg-stone-100" />
           <button
             onClick={handlePNG}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-700 hover:bg-stone-50 transition-colors focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none"
           >
             <Image className="w-4 h-4 text-emerald-600" />
             PNG (без фона)

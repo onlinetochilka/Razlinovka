@@ -1,5 +1,6 @@
 import { useRulingStore } from '../../store/useRulingStore';
 import { GRID_TYPES, FIXED_STEP_TYPES, SCHOOL_MARGIN_TYPES } from '../../utils/constants';
+import { track } from '../../utils/analytics';
 
 const FIXED_BADGES = {
   millimeter: '1/5/10 мм',
@@ -26,7 +27,11 @@ export default function GridTypeSelector() {
             <button
               role="switch"
               aria-checked={schoolMargins}
-              onClick={() => setSchoolMargins(!schoolMargins)}
+              onClick={() => {
+                const next = !schoolMargins;
+                setSchoolMargins(next);
+                track('school_margins_toggled', { enabled: next, gridType });
+              }}
               className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
                 schoolMargins ? 'bg-rose-400' : 'bg-stone-200'
               }`}
@@ -38,15 +43,18 @@ export default function GridTypeSelector() {
           </label>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Тип сетки">
         {GRID_TYPES.map(({ id, label }) => {
           const isActive = gridType === id;
           const badge    = FIXED_BADGES[id];
           return (
             <button
               key={id}
-              onClick={() => setGridType(id)}
-              className={`h-9 rounded-lg text-xs font-medium flex flex-col items-center justify-center leading-tight transition-all ${
+              onClick={() => { setGridType(id); track('grid_type_changed', { gridType: id }); }}
+              aria-pressed={isActive}
+              className={`min-h-[44px] sm:min-h-[36px] rounded-lg text-xs font-medium flex flex-col items-center justify-center leading-tight transition-all
+                focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none
+                ${
                 isActive
                   ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-500/30'
                   : 'bg-white text-stone-600 ring-1 ring-stone-200 hover:bg-stone-50 hover:text-stone-900'

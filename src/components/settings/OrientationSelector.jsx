@@ -1,4 +1,5 @@
 import { useRulingStore } from '../../store/useRulingStore';
+import { track } from '../../utils/analytics';
 
 const OPTIONS = [
   { id: 'portrait',  label: 'Книжная',
@@ -13,10 +14,13 @@ export default function OrientationSelector() {
   return (
     <section>
       <p className='text-[11px] font-bold text-stone-500 uppercase mb-2'>Ориентация</p>
-      <div className='grid grid-cols-2 gap-1.5'>
+      <div className='grid grid-cols-2 gap-1.5' role="group" aria-label="Ориентация страницы">
         {OPTIONS.map(({ id, label, icon }) => (
-          <button key={id} onClick={() => setOrientation(id)}
-            className={`h-9 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all ${orientation === id ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}>{icon}{label}</button>
+          <button key={id} onClick={() => { setOrientation(id); track('orientation_changed', { orientation: id }); }}
+            aria-pressed={orientation === id}
+            className={`min-h-[44px] sm:min-h-[36px] rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all
+              focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none
+              ${orientation === id ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}>{icon}{label}</button>
         ))}
       </div>
     </section>

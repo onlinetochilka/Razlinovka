@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useRulingStore } from '../../store/useRulingStore';
+import { track } from '../../utils/analytics';
 
 const FIELDS = [
   { key: 'top',    label: 'Верхнее' },
@@ -40,8 +41,10 @@ function MarginInput({ marginKey, label }) {
         min={0}
         step={1}
         value={value}
+        aria-label={`Поле ${label} в миллиметрах`}
         onChange={handleChange}
-        className={`w-full h-8 text-center rounded-lg border text-brand-blue font-semibold text-sm outline-none bg-white transition-all
+        className={`w-full min-h-[44px] sm:min-h-[36px] text-center rounded-lg border text-brand-blue font-semibold text-sm outline-none bg-white transition-all
+          focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none
           ${shake ? 'shake border-rose-400 ring-1 ring-rose-400/40' : 'border-stone-200 hover:border-stone-300 focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/20'}
         `}
       />
@@ -54,13 +57,20 @@ export default function MarginsEditor() {
   const resetMargins  = useRulingStore(s => s.resetMargins);
   const noMargins     = _savedMargins !== null;
 
+  const handleReset = () => {
+    resetMargins();
+    track('margins_reset', { noMargins: !noMargins });
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between mb-2">
         <p className="text-[11px] font-bold text-stone-500 uppercase">Поля (мм)</p>
         <button
-          onClick={resetMargins}
-          className={`h-5 px-2 rounded text-[10px] font-medium transition-all ${
+          onClick={handleReset}
+          className={`h-5 px-2 rounded text-[10px] font-medium transition-all
+            focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none
+            ${
             noMargins
               ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-300/50'
               : 'bg-stone-100 text-stone-500 hover:bg-stone-200'

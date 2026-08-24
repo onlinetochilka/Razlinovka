@@ -42,7 +42,9 @@ function NumInput({ value, min, max, step, disabled, onChange, label }) {
         step={step}
         value={local}
         disabled={disabled}
-        className={`w-16 h-9 text-center rounded-lg border text-brand-blue font-semibold text-sm transition-all outline-none
+        aria-label={label}
+        className={`w-16 min-h-[44px] sm:min-h-[36px] text-center rounded-lg border text-brand-blue font-semibold text-sm transition-all outline-none
+          focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none
           ${shake ? 'shake border-rose-400 ring-1 ring-rose-400/40' : 'border-stone-200 hover:border-stone-300 focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/20'}
           ${disabled ? 'opacity-40 cursor-not-allowed bg-stone-50' : 'bg-white'}
         `}

@@ -5,8 +5,12 @@ import GridParams          from './settings/GridParams';
 import ColorPicker         from './settings/ColorPicker';
 import MarginsEditor       from './settings/MarginsEditor';
 import DownloadMenu        from './DownloadMenu';
+import { track, reachGoal } from '../utils/analytics';
+import { useRulingStore } from '../store/useRulingStore';
 
 export default function Sidebar({ svgRef }) {
+  const { gridType, orientation, paperSize } = useRulingStore();
+
   return (
     <div className="relative flex flex-col lg:h-full lg:flex-shrink-0 z-10 w-full lg:w-[clamp(380px,27vw,450px)] lg:min-w-[380px] print:hidden">
       <aside className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 flex flex-col lg:h-full">
@@ -38,8 +42,12 @@ export default function Sidebar({ svgRef }) {
         <footer className="p-4 border-t border-stone-200/50 bg-stone-50/50 flex gap-2">
           <DownloadMenu svgRef={svgRef} />
           <button
-            onClick={() => window.print()}
-            className="flex-1 h-12 rounded-xl bg-brand-blue text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#005270] shadow-[0_4px_14px_rgba(0,101,132,0.30)] transition-all active:scale-[0.98]"
+            onClick={() => {
+              track('print_sheet_clicked', { paperSize, orientation, gridType });
+              reachGoal('ruling_print');
+              window.print();
+            }}
+            className="flex-1 h-12 rounded-xl bg-brand-blue text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#005270] shadow-[0_4px_14px_rgba(0,101,132,0.30)] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 focus:outline-none"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 6 2 18 2 18 9"/>
