@@ -3,15 +3,16 @@ import { useRulingStore } from '../../store/useRulingStore';
 import { FIXED_STEP_TYPES } from '../../utils/constants';
 
 function NumInput({ value, min, max, step, disabled, onChange, label }) {
-  const [local, setLocal] = useState(String(value));
+  // Убираем возможный float-мусор (например, 0.300000000004) при инициализации
+  const cleanValue = Number(value.toFixed(3));
+  const [local, setLocal] = useState(String(cleanValue));
   const [shake, setShake] = useState(false);
   const timer = useRef(null);
 
-  // ?????????????? local ???? value ????????? ???????
   const prevVal = useRef(value);
   if (prevVal.current !== value) {
     prevVal.current = value;
-    // ?? ????????? local ???? ???????????? ?????? ??????????? (blur ??? ?? ???)
+    setLocal(String(Number(value.toFixed(3))));
   }
 
   const triggerShake = () => {
@@ -29,7 +30,7 @@ function NumInput({ value, min, max, step, disabled, onChange, label }) {
       return;
     }
     onChange(n);
-    setLocal(String(n));
+    setLocal(String(Number(n.toFixed(3))));
   }, [min, max, value, onChange]);
 
   return (

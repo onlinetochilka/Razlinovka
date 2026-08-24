@@ -17,8 +17,10 @@ import {
 
 function clamp(val, mn, mx) { return Math.min(mx, Math.max(mn, val)); }
 
-/** Snap к ближайшему кратному step */
-function snap(val, step) { return Math.round(val / step) * step; }
+/** Snap к ближайшему кратному step, отсекаем float-мусор */
+function snap(val, step) {
+  return Math.round(Math.round(val / step) * step * 1000) / 1000;
+}
 
 /* ── Начальное состояние ────────────────────────────────────────────────── */
 
