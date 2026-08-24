@@ -15,7 +15,6 @@ export default function PreviewSheet({ svgRef }) {
     gridStep,
     lineThick,
     lineColor,
-    lineStyle,
     showHeaders,
     schoolMargins,
     orientation,
@@ -71,52 +70,19 @@ export default function PreviewSheet({ svgRef }) {
         </defs>
 
         {/* Сетка линий */}
-        {paths.map((p, i) => {
-          let dash = p.dasharray;
-          let cap = p.linecap ?? 'square';
-          let dashOffset = 0;
-
-          if (!dash) {
-            if (lineStyle === 'dashed') {
-              // Синхронизируем штрих с шагом сетки
-              const n = Math.max(1, Math.round(gridStep / 6));
-              const piece = gridStep / (n * 2);
-              dash = `${piece} ${piece}`;
-              dashOffset = piece / 2; // Центрируем штрих на перекрестиях (крестик)
-            }
-            else if (lineStyle === 'dotted') {
-              // Синхронизируем точки с шагом сетки
-              const n = Math.max(2, Math.round(gridStep / 3));
-              const piece = gridStep / n;
-              dash = `0 ${piece}`;
-              cap = 'round';
-              dashOffset = 0; // Точка попадает ровно в перекрестие
-            }
-          }
-          
-          // Разбиваем путь на отдельные линии (M ...), чтобы dasharray 
-          // начинался заново для каждой линии, иначе возникает смещение
-          const segments = p.d.split(/(?=M )/).filter(Boolean);
-
-          return (
-            <g key={i}>
-              {segments.map((seg, j) => (
-                <path
-                  key={j}
-                  d={seg}
-                  fill="none"
-                  stroke={lineColor}
-                  strokeWidth={p.strokeWidth ?? lineThick}
-                  opacity={p.opacity ?? 1}
-                  strokeDasharray={dash}
-                  strokeDashoffset={dashOffset}
-                  strokeLinecap={cap}
-                  clipPath="url(#gridClip)"
-                />
-              ))}
-            </g>
-          );
-        })}
+        {paths.map((p, i) => (
+          <path
+            key={i}
+            d={p.d}
+            fill="none"
+            stroke={lineColor}
+            strokeWidth={p.strokeWidth ?? lineThick}
+            opacity={p.opacity ?? 1}
+            strokeDasharray={p.dasharray}
+            strokeLinecap={p.linecap ?? 'square'}
+            clipPath="url(#gridClip)"
+          />
+        ))}
 
         {showHeaders && (
           <text
