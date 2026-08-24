@@ -96,7 +96,9 @@ export function buildNotesGrid(x0, y0, x1, y1) {
   const CYCLE     = STAFF_H + BETWEEN; // 20 мм
 
   let d = '';
-  for (let staffTop = y0; staffTop < y1; staffTop += CYCLE) {
+  // Центрируем станы: отступ сверху и снизу равен BETWEEN / 2 (6 мм)
+  const topOffset = BETWEEN / 2;
+  for (let staffTop = y0 + topOffset; staffTop < y1; staffTop += CYCLE) {
     for (let i = 0; i < 5; i++) {
       const y = r(staffTop + i * LINE_STEP);
       if (y > y1 + 0.001) break;
