@@ -74,11 +74,23 @@ export default function PreviewSheet({ svgRef }) {
         {paths.map((p, i) => {
           let dash = p.dasharray;
           let cap = p.linecap ?? 'square';
+          let dashOffset = 0;
+
           if (!dash) {
-            if (lineStyle === 'dashed') dash = '4 4';
+            if (lineStyle === 'dashed') {
+              // Синхронизируем штрих с шагом сетки
+              const n = Math.max(1, Math.round(gridStep / 6));
+              const piece = gridStep / (n * 2);
+              dash = `${piece} ${piece}`;
+              dashOffset = piece / 2; // Центрируем штрих на перекрестиях (крестик)
+            }
             else if (lineStyle === 'dotted') {
-              dash = '0 4';
+              // Синхронизируем точки с шагом сетки
+              const n = Math.max(2, Math.round(gridStep / 3));
+              const piece = gridStep / n;
+              dash = `0 ${piece}`;
               cap = 'round';
+              dashOffset = 0; // Точка попадает ровно в перекрестие
             }
           }
           
@@ -97,6 +109,7 @@ export default function PreviewSheet({ svgRef }) {
                   strokeWidth={p.strokeWidth ?? lineThick}
                   opacity={p.opacity ?? 1}
                   strokeDasharray={dash}
+                  strokeDashoffset={dashOffset}
                   strokeLinecap={cap}
                   clipPath="url(#gridClip)"
                 />
