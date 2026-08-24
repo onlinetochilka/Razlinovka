@@ -33,6 +33,8 @@ const initialState = {
   gridStep:     5,
   lineThick:    0.3,
   lineColor:    '#94a3b8',
+  lineStyle:    'solid',
+  showHeaders:  false,
   margins:      { ...DEFAULT_MARGINS },
   schoolMargins: true,
 
@@ -88,6 +90,16 @@ export const useRulingStore = create(
       /* ─── Цвет линии ─────────────────────────────────────────────────── */
       setLineColor(hex) {
         set({ lineColor: hex });
+      },
+
+      /* ─── Стиль линии ────────────────────────────────────────────────── */
+      setLineStyle(style) {
+        set({ lineStyle: style });
+      },
+
+      /* ─── Шапка ученика ──────────────────────────────────────────────── */
+      setShowHeaders(bool) {
+        set({ showHeaders: bool });
       },
 
       /* ─── Поля ───────────────────────────────────────────────────────── */

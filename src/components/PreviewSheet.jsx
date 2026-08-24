@@ -15,6 +15,8 @@ export default function PreviewSheet({ svgRef }) {
     gridStep,
     lineThick,
     lineColor,
+    lineStyle,
+    showHeaders,
     schoolMargins,
     orientation,
     paperW,
@@ -33,7 +35,10 @@ export default function PreviewSheet({ svgRef }) {
     [margins.top, margins.bottom, margins.left, margins.right, gridType, gridStep, paperW, paperH, orientation],
   );
 
-  const { x0, y0, x1, y1 } = bounds;
+  let { x0, y0, x1, y1 } = bounds;
+  if (showHeaders) {
+    y0 = Math.min(y0 + 15, y1);
+  }
 
   const paths = useMemo(
     () => buildGridPaths(gridType, x0, y0, x1, y1, gridStep),
@@ -66,19 +71,42 @@ export default function PreviewSheet({ svgRef }) {
         </defs>
 
         {/* ????? ????? */}
-        {paths.map((p, i) => (
-          <path
-            key={i}
-            d={p.d}
-            fill="none"
-            stroke={lineColor}
-            strokeWidth={p.strokeWidth ?? lineThick}
-            opacity={p.opacity ?? 1}
-            strokeDasharray={p.dasharray}
-            strokeLinecap={p.linecap ?? 'square'}
-            clipPath="url(#gridClip)"
-          />
-        ))}
+        {paths.map((p, i) => {
+          let dash = p.dasharray;
+          let cap = p.linecap ?? 'square';
+          if (!dash) {
+            if (lineStyle === 'dashed') dash = '4 4';
+            else if (lineStyle === 'dotted') {
+              dash = '1 3';
+              cap = 'round';
+            }
+          }
+          return (
+            <path
+              key={i}
+              d={p.d}
+              fill="none"
+              stroke={lineColor}
+              strokeWidth={p.strokeWidth ?? lineThick}
+              opacity={p.opacity ?? 1}
+              strokeDasharray={dash}
+              strokeLinecap={cap}
+              clipPath="url(#gridClip)"
+            />
+          );
+        })}
+
+        {showHeaders && (
+          <text
+            x={bounds.x0}
+            y={10}
+            fill={lineColor}
+            fontSize="5"
+            fontFamily="system-ui, sans-serif"
+          >
+            Ученик: _________________________________ Дата: ________________
+          </text>
+        )}
 
         {/* ??????? ???????? ????? */}
         {marginX !== null && (

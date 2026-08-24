@@ -58,11 +58,15 @@ function NumInput({ value, min, max, step, disabled, onChange, label }) {
 }
 
 export default function GridParams() {
-  const gridType     = useRulingStore(s => s.gridType);
-  const gridStep     = useRulingStore(s => s.gridStep);
-  const lineThick    = useRulingStore(s => s.lineThick);
-  const setGridStep  = useRulingStore(s => s.setGridStep);
-  const setLineThick = useRulingStore(s => s.setLineThick);
+  const gridType       = useRulingStore(s => s.gridType);
+  const gridStep       = useRulingStore(s => s.gridStep);
+  const lineThick      = useRulingStore(s => s.lineThick);
+  const lineStyle      = useRulingStore(s => s.lineStyle);
+  const showHeaders    = useRulingStore(s => s.showHeaders);
+  const setGridStep    = useRulingStore(s => s.setGridStep);
+  const setLineThick   = useRulingStore(s => s.setLineThick);
+  const setLineStyle   = useRulingStore(s => s.setLineStyle);
+  const setShowHeaders = useRulingStore(s => s.setShowHeaders);
 
   return (
     <section>
@@ -86,6 +90,27 @@ export default function GridParams() {
           disabled={false}
           onChange={setLineThick}
         />
+        <label className="flex flex-col gap-1.5 text-xs text-stone-600 select-none">
+          Стиль
+          <select
+            value={lineStyle}
+            onChange={e => setLineStyle(e.target.value)}
+            className="h-[44px] sm:h-[36px] px-2 rounded-lg border border-stone-200 text-brand-blue font-semibold text-sm transition-all focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/20 outline-none cursor-pointer"
+          >
+            <option value="solid">Сплошная</option>
+            <option value="dashed">Пунктир</option>
+            <option value="dotted">Точки</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-stone-600 select-none cursor-pointer mt-4 sm:mt-0">
+          <input
+            type="checkbox"
+            checked={showHeaders}
+            onChange={e => setShowHeaders(e.target.checked)}
+            className="w-4 h-4 rounded border-stone-300 text-brand-blue focus:ring-brand-blue/20 cursor-pointer"
+          />
+          Шапка ученика (ФИО)
+        </label>
       </div>
     </section>
   );
