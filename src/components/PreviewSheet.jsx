@@ -70,29 +70,38 @@ export default function PreviewSheet({ svgRef }) {
           </clipPath>
         </defs>
 
-        {/* ????? ????? */}
+        {/* Сетка линий */}
         {paths.map((p, i) => {
           let dash = p.dasharray;
           let cap = p.linecap ?? 'square';
           if (!dash) {
             if (lineStyle === 'dashed') dash = '4 4';
             else if (lineStyle === 'dotted') {
-              dash = '1 3';
+              dash = '0 4';
               cap = 'round';
             }
           }
+          
+          // Разбиваем путь на отдельные линии (M ...), чтобы dasharray 
+          // начинался заново для каждой линии, иначе возникает смещение
+          const segments = p.d.split(/(?=M )/).filter(Boolean);
+
           return (
-            <path
-              key={i}
-              d={p.d}
-              fill="none"
-              stroke={lineColor}
-              strokeWidth={p.strokeWidth ?? lineThick}
-              opacity={p.opacity ?? 1}
-              strokeDasharray={dash}
-              strokeLinecap={cap}
-              clipPath="url(#gridClip)"
-            />
+            <g key={i}>
+              {segments.map((seg, j) => (
+                <path
+                  key={j}
+                  d={seg}
+                  fill="none"
+                  stroke={lineColor}
+                  strokeWidth={p.strokeWidth ?? lineThick}
+                  opacity={p.opacity ?? 1}
+                  strokeDasharray={dash}
+                  strokeLinecap={cap}
+                  clipPath="url(#gridClip)"
+                />
+              ))}
+            </g>
           );
         })}
 
