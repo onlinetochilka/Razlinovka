@@ -1,13 +1,7 @@
 import { useRulingStore } from '../../store/useRulingStore';
-import { GRID_TYPES, FIXED_STEP_TYPES, SCHOOL_MARGIN_TYPES } from '../../utils/constants';
+import { GRID_TYPES, SCHOOL_MARGIN_TYPES } from '../../utils/constants';
 import { track } from '../../utils/analytics';
 
-const FIXED_BADGES = {
-  millimeter: '1/5/10 мм',
-  slanted:    '4+8 мм',
-  frequent:   '4+8 мм',
-  notes:      '2+12 мм',
-};
 
 export default function GridTypeSelector() {
   const gridType         = useRulingStore(s => s.gridType);
@@ -46,13 +40,12 @@ export default function GridTypeSelector() {
       <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Тип сетки">
         {GRID_TYPES.map(({ id, label }) => {
           const isActive = gridType === id;
-          const badge    = FIXED_BADGES[id];
           return (
             <button
               key={id}
               onClick={() => { setGridType(id); track('grid_type_changed', { gridType: id }); }}
               aria-pressed={isActive}
-              className={`min-h-[44px] sm:min-h-[36px] rounded-lg text-xs font-medium flex flex-col items-center justify-center leading-tight transition-all
+              className={`min-h-[36px] sm:min-h-[32px] rounded-lg text-xs font-medium flex items-center justify-center leading-tight transition-all
                 focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 focus:outline-none
                 ${
                 isActive
@@ -61,11 +54,6 @@ export default function GridTypeSelector() {
               }`}
             >
               <span>{label}</span>
-              {badge && (
-                <span className={`text-[9px] font-normal ${isActive ? 'text-violet-500/70' : 'text-stone-400'}`}>
-                  {badge}
-                </span>
-              )}
             </button>
           );
         })}
