@@ -15,7 +15,6 @@ export default function PreviewSheet({ svgRef }) {
     gridStep,
     lineThick,
     lineColor,
-    showHeaders,
     schoolMargins,
     orientation,
     paperW,
@@ -34,10 +33,7 @@ export default function PreviewSheet({ svgRef }) {
     [margins.top, margins.bottom, margins.left, margins.right, gridType, gridStep, paperW, paperH, orientation],
   );
 
-  let { x0, y0, x1, y1 } = bounds;
-  if (showHeaders) {
-    y0 = Math.min(y0 + 15, y1);
-  }
+  const { x0, y0, x1, y1 } = bounds;
 
   const paths = useMemo(
     () => buildGridPaths(gridType, x0, y0, x1, y1, gridStep),
@@ -84,17 +80,7 @@ export default function PreviewSheet({ svgRef }) {
           />
         ))}
 
-        {showHeaders && (
-          <text
-            x={bounds.x0}
-            y={10}
-            fill={lineColor}
-            fontSize="5"
-            fontFamily="system-ui, sans-serif"
-          >
-            Ученик: _________________________________ Дата: ________________
-          </text>
-        )}
+
 
         {/* ??????? ???????? ????? */}
         {marginX !== null && (

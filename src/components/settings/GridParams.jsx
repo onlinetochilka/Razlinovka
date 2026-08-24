@@ -58,13 +58,11 @@ function NumInput({ value, min, max, step, disabled, onChange, label }) {
 }
 
 export default function GridParams() {
-  const gridType       = useRulingStore(s => s.gridType);
-  const gridStep       = useRulingStore(s => s.gridStep);
-  const lineThick      = useRulingStore(s => s.lineThick);
-  const showHeaders    = useRulingStore(s => s.showHeaders);
-  const setGridStep    = useRulingStore(s => s.setGridStep);
-  const setLineThick   = useRulingStore(s => s.setLineThick);
-  const setShowHeaders = useRulingStore(s => s.setShowHeaders);
+  const gridType     = useRulingStore(s => s.gridType);
+  const gridStep     = useRulingStore(s => s.gridStep);
+  const lineThick    = useRulingStore(s => s.lineThick);
+  const setGridStep  = useRulingStore(s => s.setGridStep);
+  const setLineThick = useRulingStore(s => s.setLineThick);
 
   return (
     <section>
@@ -88,15 +86,6 @@ export default function GridParams() {
           disabled={false}
           onChange={setLineThick}
         />
-        <label className="flex items-center gap-2 text-xs text-stone-600 select-none cursor-pointer mt-4 sm:mt-0">
-          <input
-            type="checkbox"
-            checked={showHeaders}
-            onChange={e => setShowHeaders(e.target.checked)}
-            className="w-4 h-4 rounded border-stone-300 text-brand-blue focus:ring-brand-blue/20 cursor-pointer"
-          />
-          Шапка ученика (ФИО)
-        </label>
       </div>
     </section>
   );
