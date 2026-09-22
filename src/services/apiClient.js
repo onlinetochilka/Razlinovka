@@ -16,7 +16,7 @@ const api = {
     const res = await fetch(`${BASE_URL}${path}`, {
       method:      'POST',
       credentials: 'include',
-      headers:     { 'Content-Type': 'application/json' },
+      headers:     { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body:        JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
@@ -27,7 +27,7 @@ const api = {
     const res = await fetch(`${BASE_URL}${path}`, {
       method:      'PATCH',
       credentials: 'include',
-      headers:     { 'Content-Type': 'application/json' },
+      headers:     { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body:        JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
@@ -38,6 +38,7 @@ const api = {
     const res = await fetch(`${BASE_URL}${path}`, {
       method:      'DELETE',
       credentials: 'include',
+      headers:     { 'X-Requested-With': 'XMLHttpRequest' },
     });
     if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
     return res.json();
